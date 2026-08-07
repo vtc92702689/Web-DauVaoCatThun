@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <title>Đăng nhập</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <style>
+    /* Reset để đảm bảo các phần tử tính toán kích thước nhất quán */
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    /* Căn giữa toàn bộ trang */
+    html, body {
+      height: 100%;
+    }
+    body {
+      font-family: Arial, sans-serif;
+      background: #f9f9f9;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+    }
+
+    /* Container đăng nhập */
+    .form-container {
+      background: #fff;
+      padding: 2rem;
+      border-radius: 8px;
+      width: 300px;
+      box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+      display: flex;
+      flex-direction: column;
+      gap: 1rem;
+    }
+
+    .form-container h2 {
+      text-align: center;
+      color: #333;
+    }
+
+    .form-container form {
+      display: flex;
+      flex-direction: column;
+      gap: 1rem;
+    }
+
+    .form-container input {
+      width: 100%;
+      padding: 0.6rem;
+      border: 1px solid #ccc;
+      border-radius: 4px;
+      font-size: 1rem;
+    }
+
+    .form-container button {
+      width: 100%;
+      padding: 0.8rem;
+      border: none;
+      border-radius: 4px;
+      background: #007bff;
+      color: #fff;
+      font-size: 1rem;
+      cursor: pointer;
+    }
+
+    .form-container button:hover {
+      background: #0056b3;
+    }
+
+    /* Thông báo lỗi */
+    .notification {
+      color: red;
+      font-size: 0.95rem;
+      text-align: center;
+    }
+  </style>
+</head>
+<body>
+  <div class="form-container">
+    <h2>Đăng nhập</h2>
+    <!-- Thông báo lỗi -->
+    <div id="notification" class="notification"></div>
+    <form id="loginForm">
+      <input type="text" name="username" placeholder="Tên đăng nhập" required>
+      <input type="password" name="password" placeholder="Mật khẩu" required>
+      <button type="submit">Đăng nhập</button>
+    </form>
+  </div>
+
+  <script>
+    document.getElementById("loginForm").addEventListener("submit", function(event) {
+      event.preventDefault(); // Ngăn hành vi submit mặc định
+
+      // Lấy giá trị từ các ô input
+      const username = document.querySelector("input[name='username']").value.trim();
+      const password = document.querySelector("input[name='password']").value;
+      const loginButton = document.querySelector("button[type='submit']");
+      const notificationEl = document.getElementById("notification");
+
+      // Xóa thông báo cũ
+      notificationEl.innerText = "";
+
+      // Vô hiệu hóa nút đăng nhập để tránh gửi yêu cầu nhiều lần
+      loginButton.disabled = true;
+      loginButton.innerText = "Đang xử lý...";
+
+      // URL của script endpoint mới
+      const baseUrl = "https://script.google.com/macros/s/AKfycbyC6vwJx1Vo7TWH6Ty3gLWr2Pe-aFTn47ZyWCOHa8JC6ClpVkD5jLgdVLmw-N5yRQ8/exec";
+
+      // Gửi POST request với các tham số tương thích Apps Script (func=login, id, password)
+      fetch(baseUrl, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/x-www-form-urlencoded'
+        },
+        body: `func=login&id=${encodeURIComponent(username)}&password=${encodeURIComponent(password)}`
+      })
+        .then(response => response.json())
+        .then(data => {
+          // Kiểm tra dữ liệu trả về từ server
+          if (data.status === "success") {
+            // Lưu toàn bộ thông tin user, form và data vào localStorage
+            const userAppData = {
+              user: data.user,
+              form: data.form,
+              data: data.data
+            };
+            localStorage.setItem("appData_QuanLyNhapThun_DKien", JSON.stringify(userAppData));
+
+            // Chuyển hướng sang trang index.html
+            window.location.href = "index.html";
+          } else {
+            // Hiển thị thông báo lỗi từ server
+            notificationEl.innerText = data.notification || "Xác thực thất bại.";
+            loginButton.disabled = false;
+            loginButton.innerText = "Đăng nhập";
+          }
+        })
+        .catch(error => {
+          // Xử lý lỗi kết nối
+          notificationEl.innerText = "Lỗi kết nối: " + error.message;
+          loginButton.disabled = false;
+          loginButton.innerText = "Đăng nhập";
+        });
+    });
+  </script>
+</body>
+</html>

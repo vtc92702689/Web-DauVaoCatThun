@@ -1,0 +1,636 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Quản Lý Nhập Thun</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            text-align: center;
+            width: 100%;
+            margin: 0;
+            padding: 0 0 30px 0;
+            background-color: #f0f2f5;
+            color: #333;
+        }
+
+        .top-button-container {
+            display: flex;
+            justify-content: space-between;
+            width: 100%;
+            padding: 8px 10px;
+            gap: 6px;
+            background-color: #fff;
+            border-bottom: 1px solid #e0e0e0;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+        }
+
+        .top-button-container button {
+            flex: 1;
+            min-height: 42px;
+            padding: 6px 2px;
+            font-size: 13px;
+            font-weight: 600;
+            cursor: pointer;
+            background-color: #007BFF;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            transition: background-color 0.2s, transform 0.1s;
+        }
+
+        .top-button-container button:active {
+            transform: scale(0.96);
+            opacity: 0.9;
+        }
+
+        .top-button-container #logout-button {
+            background-color: #dc3545;
+        }
+
+        .card-container {
+            width: 94%;
+            max-width: 500px;
+            margin: 10px auto;
+            background-color: #fff;
+            border-radius: 10px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+
+        .input-container {
+            padding: 10px;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            text-align: left;
+        }
+
+        table th, table td {
+            padding: 10px 12px;
+            border-bottom: 1px solid #f0f0f0;
+            font-size: 14px;
+        }
+
+        table tr:last-child th, table tr:last-child td {
+            border-bottom: none;
+        }
+
+        table th {
+            width: 38%;
+            background-color: #f8f9fa;
+            color: #495057;
+            font-weight: 600;
+            vertical-align: middle;
+        }
+
+        table td {
+            width: 62%;
+            word-break: break-word;
+        }
+
+        input[type="text"],
+        input[type="number"],
+        input[type="date"],
+        select {
+            width: 100%;
+            height: 44px;
+            padding: 8px 10px;
+            border: 1px solid #ccc;
+            border-radius: 6px;
+            font-size: 16px;
+            background-color: #fff;
+            outline: none;
+            transition: border-color 0.2s;
+        }
+
+        input[type="text"]:focus,
+        input[type="number"]:focus,
+        input[type="date"]:focus,
+        select:focus {
+            border-color: #007BFF;
+        }
+
+        input[readonly] {
+            background-color: #e9ecef;
+            color: #495057;
+            cursor: not-allowed;
+            font-weight: 600;
+        }
+
+        .highlight-value {
+            font-weight: bold;
+            color: #007BFF;
+            font-size: 15px;
+        }
+
+        .batch-preview {
+            color: #28a745;
+            font-weight: bold;
+            font-size: 13px;
+            margin-top: 5px;
+            display: block;
+        }
+
+        #submit-button {
+            display: block;
+            margin: 15px auto 20px auto;
+            height: 50px;
+            font-size: 17px;
+            font-weight: bold;
+            cursor: pointer;
+            background-color: #28A745;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            width: 94%;
+            max-width: 500px;
+            box-shadow: 0 3px 6px rgba(40, 167, 69, 0.3);
+            transition: background-color 0.2s, transform 0.1s;
+        }
+
+        #submit-button:active {
+            transform: scale(0.98);
+            background-color: #218838;
+        }
+
+        .loading {
+            opacity: 0.6;
+            cursor: not-allowed !important;
+            pointer-events: none;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- THANH NÚT BẤM TÁC VỤ -->
+    <div class="top-button-container">
+        <button id="logout-button">Đăng xuất</button>
+        <button id="refresh-button">Làm mới</button>
+        <button id="toggle-button">Ẩn/Hiện</button>
+        <button id="history-button">Lịch sử</button>
+    </div>
+
+    <!-- KHỐI THÔNG TIN NGƯỜI DÙNG -->
+    <div class="card-container input-container" id="user-info-container">
+        <table>
+            <tr>
+                <th>ID người dùng</th>
+                <td id="displayed-user-id" class="highlight-value">---</td>
+            </tr>
+            <tr>
+                <th>Họ tên</th>
+                <td id="displayed-username" class="highlight-value">---</td>
+            </tr>
+            <tr>
+                <th>Bộ phận</th>
+                <td id="displayed-phanxuong">---</td>
+            </tr>
+        </table>
+    </div>
+
+    <!-- KHỐI CHỈ SỐ TỔNG QUAN -->
+    <div class="card-container">
+        <table>
+            <tr>
+                <th>Mã tiếp theo</th>
+                <td id="next-code" class="highlight-value">---</td>
+            </tr>
+            <tr>
+                <th>Tổng thun đơn hàng</th>
+                <td id="total-order-elastic" class="highlight-value">0</td>
+            </tr>
+            <tr>
+                <th>Số lượng đã nhận</th>
+                <td id="received-qty" class="highlight-value" style="color: #dc3545;">0</td>
+            </tr>
+        </table>
+    </div>
+
+    <!-- FORM NHẬP DỮ LIỆU -->
+    <div class="card-container">
+        <table>
+            <tr>
+                <th>Ngày nhận</th>
+                <td><input type="date" id="date-input"></td>
+            </tr>
+            <tr>
+                <th>Mã hàng</th>
+                <td>
+                    <select id="item-code-select">
+                        <option value="">-- Chọn mã hàng --</option>
+                    </select>
+                </td>
+            </tr>
+            <tr>
+                <th>Loại thun</th>
+                <td><input type="text" id="elastic-type-input" readonly placeholder="Tự động theo mã hàng"></td>
+            </tr>
+            <tr>
+                <th>Màu</th>
+                <td>
+                    <select id="color-select">
+                        <option value="">-- Chọn màu --</option>
+                    </select>
+                </td>
+            </tr>
+            <tr>
+                <th>Số thùng</th>
+                <td>
+                    <input type="number" id="box-count-input" inputmode="numeric" min="0" placeholder="Nhập số thùng">
+                </td>
+            </tr>
+            <tr>
+                <th>Số lượng/thùng</th>
+                <td>
+                    <input type="number" id="box-qty-input" inputmode="decimal" min="0" placeholder="Nhập số lượng/thùng">
+                    <span id="batch-preview" class="batch-preview">Tổng đợt này: 0 Mét</span>
+                </td>
+            </tr>
+            <tr>
+                <th>Đơn vị</th>
+                <td>
+                    <select id="unit-select">
+                        <option value="">-- Chọn đơn vị --</option>
+                    </select>
+                </td>
+            </tr>
+            <tr>
+                <th>Ghi chú</th>
+                <td><input type="text" id="note-input" placeholder="Nhập ghi chú (nếu có)"></td>
+            </tr>
+        </table>
+    </div>
+
+    <button id="submit-button">Gửi dữ liệu</button>
+
+    <script>
+        document.addEventListener("DOMContentLoaded", function () {
+            const APP_STORAGE_KEY = "appData_QuanLyNhapThun_DKien";
+            const BASE_API_URL = "https://script.google.com/macros/s/AKfycbyC6vwJx1Vo7TWH6Ty3gLWr2Pe-aFTn47ZyWCOHa8JC6ClpVkD5jLgdVLmw-N5yRQ8/exec";
+
+            // Mặc định ngày hiện tại
+            const today = new Date().toISOString().split('T')[0];
+            document.getElementById("date-input").value = today;
+
+            // DOM Elements
+            const userIdEl = document.getElementById("displayed-user-id");
+            const usernameEl = document.getElementById("displayed-username");
+            const phanXuongEl = document.getElementById("displayed-phanxuong");
+
+            const nextCodeEl = document.getElementById("next-code");
+            const totalOrderElasticEl = document.getElementById("total-order-elastic");
+            const receivedQtyEl = document.getElementById("received-qty");
+
+            const itemCodeSelect = document.getElementById("item-code-select");
+            const elasticTypeInput = document.getElementById("elastic-type-input");
+            const colorSelect = document.getElementById("color-select");
+            const boxCountInput = document.getElementById("box-count-input");
+            const boxQtyInput = document.getElementById("box-qty-input");
+            const batchPreviewEl = document.getElementById("batch-preview");
+            const unitSelect = document.getElementById("unit-select");
+            const userInfoContainer = document.getElementById("user-info-container");
+
+            // --- 1. LẤY DỮ LIỆU TỪ LOCALSTORAGE ---
+            function getAppData() {
+                const jsonData = localStorage.getItem(APP_STORAGE_KEY);
+                if (!jsonData) return null;
+                try {
+                    return JSON.parse(jsonData);
+                } catch (e) {
+                    console.error("Lỗi parse JSON:", e);
+                    return null;
+                }
+            }
+
+            // --- 2. TRÍCH XUẤT THÔNG TIN XÁC THỰC ---
+            function getAuthInfo(appData) {
+                if (!appData || !appData.user) return null;
+                const user = appData.user;
+                const userId = user.id || user.maSoThe || "";
+                const token = user.token || "";
+
+                if (!userId || !token) return null;
+                return { userId, token };
+            }
+
+            // --- 3. TÍNH TỔNG SỐ LƯỢNG ĐÃ NHẬN ---
+            function calculateReceivedQuantity(selectedMaHang, appData) {
+                let total = 0;
+                if (!appData || !appData.data) return 0;
+
+                const rows = Array.isArray(appData.data) 
+                    ? appData.data 
+                    : Object.values(appData.data);
+
+                rows.forEach(item => {
+                    if (!item) return;
+                    const itemMaHang = item.maHang || "";
+
+                    if (String(itemMaHang).trim().toLowerCase() === String(selectedMaHang).trim().toLowerCase()) {
+                        const st = parseFloat(item.soThung || 0) || 0;
+                        const slt = parseFloat(item.soLuongThung || 0) || 0;
+                        total += (st * slt);
+                    }
+                });
+
+                return total;
+            }
+
+            // --- 4. HIỂN THỊ DỮ LIỆU LÊN GIAO DIỆN ---
+            function initUI() {
+                const appData = getAppData();
+                if (!appData || !appData.user) {
+                    alert("Phiên đăng nhập không hợp lệ hoặc đã hết hạn. Vui lòng đăng nhập lại!");
+                    window.location.href = "login.html";
+                    return;
+                }
+
+                const user = appData.user || {};
+                const form = appData.form || {};
+
+                userIdEl.textContent = user.id || user.maSoThe || "---";
+                usernameEl.textContent = user.tenNguoiDung || "---";
+                phanXuongEl.textContent = user.boPhan || "---";
+
+                nextCodeEl.textContent = form.maTiepTheo || "---";
+
+                if (form.listMH) {
+                    itemCodeSelect.innerHTML = '<option value="">-- Chọn mã hàng --</option>';
+                    Object.keys(form.listMH).forEach(key => {
+                        const option = document.createElement("option");
+                        option.value = key;
+                        option.textContent = key;
+                        itemCodeSelect.appendChild(option);
+                    });
+                }
+
+                if (Array.isArray(form.donViTinh)) {
+                    unitSelect.innerHTML = '<option value="">-- Chọn đơn vị --</option>';
+                    form.donViTinh.forEach(unit => {
+                        const option = document.createElement("option");
+                        option.value = unit;
+                        option.textContent = unit;
+                        unitSelect.appendChild(option);
+                    });
+
+                    const lastUnit = localStorage.getItem("lastSelectedUnit");
+                    if (lastUnit && form.donViTinh.includes(lastUnit)) {
+                        unitSelect.value = lastUnit;
+                    }
+                }
+            }
+
+            // --- 5. CHỌN MÃ HÀNG TỰ ĐỘNG ---
+            itemCodeSelect.addEventListener("change", function () {
+                const selectedMaHang = this.value;
+                const appData = getAppData();
+
+                if (!selectedMaHang || !appData || !appData.form || !appData.form.listMH) {
+                    elasticTypeInput.value = "";
+                    colorSelect.innerHTML = '<option value="">-- Chọn màu --</option>';
+                    totalOrderElasticEl.textContent = "0";
+                    receivedQtyEl.textContent = "0";
+                    return;
+                }
+
+                const itemData = appData.form.listMH[selectedMaHang] || {};
+
+                elasticTypeInput.value = itemData.loaiThun || "";
+                const totalOrder = Number(itemData.tongThunDonHang || 0);
+                totalOrderElasticEl.textContent = totalOrder.toLocaleString('vi-VN');
+
+                colorSelect.innerHTML = '<option value="">-- Chọn màu --</option>';
+                const rawColor = itemData.mauThun || "";
+                let colors = [];
+
+                if (rawColor) {
+                    colors = String(rawColor).split('|')
+                        .map(c => c.trim())
+                        .filter((c, index, self) => c !== "" && self.indexOf(c) === index);
+
+                    colors.forEach(color => {
+                        const option = document.createElement("option");
+                        option.value = color;
+                        option.textContent = color;
+                        colorSelect.appendChild(option);
+                    });
+                }
+
+                if (colors.length === 1) {
+                    colorSelect.value = colors[0];
+                    boxCountInput.focus();
+                } else if (colors.length > 1) {
+                    colorSelect.focus();
+                }
+
+                const totalReceived = calculateReceivedQuantity(selectedMaHang, appData);
+                receivedQtyEl.textContent = Number(totalReceived).toLocaleString('vi-VN');
+            });
+
+            unitSelect.addEventListener("change", function () {
+                if (this.value) {
+                    localStorage.setItem("lastSelectedUnit", this.value);
+                }
+            });
+
+            function updateBatchPreview() {
+                const st = parseFloat(boxCountInput.value) || 0;
+                const slt = parseFloat(boxQtyInput.value) || 0;
+                const total = st * slt;
+                batchPreviewEl.textContent = `Tổng đợt này: ${total.toLocaleString('vi-VN')} Mét`;
+            }
+
+            boxCountInput.addEventListener("input", updateBatchPreview);
+            boxQtyInput.addEventListener("input", updateBatchPreview);
+
+            boxCountInput.addEventListener("keydown", function (e) {
+                if (e.key === "Enter") {
+                    e.preventDefault();
+                    boxQtyInput.focus();
+                }
+            });
+
+            // --- 6. HÀM LÀM MỚI DỮ LIỆU (Thủ công khi bấm nút Làm Mới) ---
+            function updateData() {
+                const appData = getAppData();
+                const auth = getAuthInfo(appData);
+
+                if (!auth) {
+                    alert("Không tìm thấy Token xác thực. Vui lòng đăng nhập lại!");
+                    window.location.href = "login.html";
+                    return;
+                }
+
+                const refreshBtn = document.getElementById("refresh-button");
+                refreshBtn.classList.add("loading");
+
+                const requestBody = `func=update` +
+                    `&id=${encodeURIComponent(auth.userId)}` +
+                    `&idUser=${encodeURIComponent(auth.userId)}` +
+                    `&token=${encodeURIComponent(auth.token)}`;
+
+                fetch(BASE_API_URL, {
+                    method: "POST",
+                    headers: { "Content-Type": "application/x-www-form-urlencoded" },
+                    body: requestBody
+                })
+                .then(res => {
+                    if (!res.ok) throw new Error("Kết nối server thất bại.");
+                    return res.json();
+                })
+                .then(response => {
+                    if (response.status === "success") {
+                        const updatedAppData = {
+                            user: response.user || appData.user,
+                            form: response.form || appData.form,
+                            data: response.data || appData.data
+                        };
+                        localStorage.setItem(APP_STORAGE_KEY, JSON.stringify(updatedAppData));
+                        initUI();
+                        alert(response.notification || "Cập nhật dữ liệu thành công!");
+                    } else {
+                        alert(response.notification || "Xác thực thất bại từ máy chủ.");
+                    }
+                })
+                .catch(err => {
+                    console.error("Lỗi updateData:", err);
+                    alert("Có lỗi kết nối mạng!");
+                })
+                .finally(() => {
+                    refreshBtn.classList.remove("loading");
+                });
+            }
+
+            // --- 7. HÀM GỬI DỮ LIỆU (Tối ưu: Nhận dữ liệu mới trực tiếp từ Response) ---
+            function writeData() {
+                const appData = getAppData();
+                const auth = getAuthInfo(appData);
+
+                if (!auth) {
+                    alert("Không tìm thấy Token xác thực. Vui lòng đăng nhập lại!");
+                    window.location.href = "login.html";
+                    return;
+                }
+
+                const maTiepTheo = nextCodeEl.textContent.trim();
+                const ngayNhan = document.getElementById("date-input").value;
+                const maHang = itemCodeSelect.value;
+                const loaiThun = elasticTypeInput.value;
+                const mau = colorSelect.value;
+                const soThung = boxCountInput.value;
+                const soLuongThung = boxQtyInput.value;
+                const donViTinh = unitSelect.value;
+                const ghiChu = document.getElementById("note-input").value;
+
+                if (!ngayNhan || !maHang || !soThung || !soLuongThung || !donViTinh) {
+                    alert("Vui lòng điền đủ: Ngày, Mã hàng, Số thùng, Số lượng/thùng và Đơn vị!");
+                    return;
+                }
+
+                if (parseFloat(soThung) <= 0 || parseFloat(soLuongThung) <= 0) {
+                    alert("Số thùng và Số lượng/thùng phải lớn hơn 0!");
+                    return;
+                }
+
+                const submitBtn = document.getElementById("submit-button");
+                submitBtn.classList.add("loading");
+
+                const requestBody = `func=writeData` +
+                    `&id=${encodeURIComponent(auth.userId)}` +
+                    `&idUser=${encodeURIComponent(auth.userId)}` +
+                    `&token=${encodeURIComponent(auth.token)}` +
+                    `&maTiepTheo=${encodeURIComponent(maTiepTheo)}` +
+                    `&ngayNhan=${encodeURIComponent(ngayNhan)}` +
+                    `&maHang=${encodeURIComponent(maHang)}` +
+                    `&loaiThun=${encodeURIComponent(loaiThun)}` +
+                    `&mau=${encodeURIComponent(mau)}` +
+                    `&soThung=${encodeURIComponent(soThung)}` +
+                    `&soLuongThung=${encodeURIComponent(soLuongThung)}` +
+                    `&donViTinh=${encodeURIComponent(donViTinh)}` +
+                    `&ghiChu=${encodeURIComponent(ghiChu)}`;
+
+                fetch(BASE_API_URL, {
+                    method: "POST",
+                    headers: { "Content-Type": "application/x-www-form-urlencoded" },
+                    body: requestBody
+                })
+                .then(res => {
+                    if (!res.ok) throw new Error("Gửi dữ liệu thất bại.");
+                    return res.json();
+                })
+                .then(response => {
+                    if (response.status === "success") {
+                        // Ghi đè trực tiếp dữ liệu mới vào localStorage
+                        const updatedAppData = {
+                            user: response.user || appData.user,
+                            form: response.form || appData.form,
+                            data: response.data || appData.data
+                        };
+                        localStorage.setItem(APP_STORAGE_KEY, JSON.stringify(updatedAppData));
+
+                        // Xóa trống các ô nhập
+                        boxCountInput.value = "";
+                        boxQtyInput.value = "";
+                        document.getElementById("note-input").value = "";
+                        updateBatchPreview();
+
+                        // Cập nhật lại UI lập tức
+                        initUI();
+
+                        // Giữ lại mã hàng vừa chọn và tính lại tổng đã nhận
+                        if (maHang) {
+                            itemCodeSelect.value = maHang;
+                            itemCodeSelect.dispatchEvent(new Event('change'));
+                        }
+
+                        alert(response.notification || "Gửi dữ liệu thành công!");
+                    } else {
+                        alert(response.notification || "Gửi dữ liệu thất bại.");
+                    }
+                })
+                .catch(err => {
+                    console.error("Lỗi writeData:", err);
+                    alert("Có lỗi khi gửi dữ liệu!");
+                })
+                .finally(() => {
+                    submitBtn.classList.remove("loading");
+                });
+            }
+
+            // Gắn sự kiện các nút
+            document.getElementById("refresh-button").addEventListener("click", updateData);
+            document.getElementById("submit-button").addEventListener("click", writeData);
+
+            document.getElementById("toggle-button").addEventListener("click", function () {
+                userInfoContainer.style.display = (userInfoContainer.style.display === "none") ? "block" : "none";
+            });
+
+            document.getElementById("history-button").addEventListener("click", function () {
+                alert("Tính năng Lịch sử đang được cập nhật.");
+            });
+
+            document.getElementById("logout-button").addEventListener("click", function () {
+                if (confirm("Bạn có chắc chắn muốn đăng xuất?")) {
+                    localStorage.removeItem(APP_STORAGE_KEY);
+                    window.location.href = "login.html";
+                }
+            });
+
+            // Khởi chạy
+            initUI();
+        });
+    </script>
+</body>
+</html>

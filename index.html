@@ -246,13 +246,13 @@
                 </td>
             </tr>
             <tr>
-                <th>Số thùng</th>
+                <th>Số bịch (hoặc kg)</th>
                 <td>
                     <input type="number" id="box-count-input" inputmode="numeric" min="0" placeholder="Nhập số thùng">
                 </td>
             </tr>
             <tr>
-                <th>Số lượng/thùng</th>
+                <th>Định lượng / bịch (hoặc kg)</th>
                 <td>
                     <input type="number" id="box-qty-input" inputmode="decimal" min="0" placeholder="Nhập số lượng/thùng">
                     <span id="batch-preview" class="batch-preview">Tổng đợt này: 0 Mét</span>
@@ -392,10 +392,13 @@
                 }
             }
 
-            // --- 5. CHỌN MÃ HÀNG TỰ ĐỘNG ---
+            // --- 5. CHỌN MÃ HÀNG TỰ ĐỘNG (Xử lý mượt màu thun, loại thun & bàn phím) ---
             itemCodeSelect.addEventListener("change", function () {
                 const selectedMaHang = this.value;
                 const appData = getAppData();
+
+                // Giải phóng focus để ép đóng Menu Native chọn mã hàng
+                this.blur();
 
                 if (!selectedMaHang || !appData || !appData.form || !appData.form.listMH) {
                     elasticTypeInput.value = "";
@@ -407,7 +410,9 @@
 
                 const itemData = appData.form.listMH[selectedMaHang] || {};
 
+                // Tự động điền loại thun (ô này có thuộc tính readonly ở HTML nên không sửa được)
                 elasticTypeInput.value = itemData.loaiThun || "";
+                
                 const totalOrder = Number(itemData.tongThunDonHang || 0);
                 totalOrderElasticEl.textContent = totalOrder.toLocaleString('vi-VN');
 
@@ -428,11 +433,14 @@
                     });
                 }
 
+                // Tự động nhận diện màu nếu chỉ có 1 lựa chọn
                 if (colors.length === 1) {
                     colorSelect.value = colors[0];
-                    boxCountInput.focus();
-                } else if (colors.length > 1) {
-                    colorSelect.focus();
+
+                    // Đợi 350ms cho Menu chọn Mã hàng đóng hẳn rồi mới kích hoạt bàn phím ô Số thùng
+                    setTimeout(() => {
+                        boxCountInput.focus();
+                    }, 350);
                 }
 
                 const totalReceived = calculateReceivedQuantity(selectedMaHang, appData);
@@ -462,7 +470,7 @@
                 }
             });
 
-            // --- 6. HÀM LÀM MỚI DỮ LIỆU (Thủ công khi bấm nút Làm Mới) ---
+            // --- 6. HÀM LÀM MỚI DỮ LIỆU ---
             function updateData() {
                 const appData = getAppData();
                 const auth = getAuthInfo(appData);
@@ -513,7 +521,7 @@
                 });
             }
 
-            // --- 7. HÀM GỬI DỮ LIỆU (Tối ưu: Nhận dữ liệu mới trực tiếp từ Response) ---
+            // --- 7. HÀM GỬI DỮ LIỆU ---
             function writeData() {
                 const appData = getAppData();
                 const auth = getAuthInfo(appData);
@@ -572,7 +580,6 @@
                 })
                 .then(response => {
                     if (response.status === "success") {
-                        // Ghi đè trực tiếp dữ liệu mới vào localStorage
                         const updatedAppData = {
                             user: response.user || appData.user,
                             form: response.form || appData.form,
@@ -580,16 +587,13 @@
                         };
                         localStorage.setItem(APP_STORAGE_KEY, JSON.stringify(updatedAppData));
 
-                        // Xóa trống các ô nhập
                         boxCountInput.value = "";
                         boxQtyInput.value = "";
                         document.getElementById("note-input").value = "";
                         updateBatchPreview();
 
-                        // Cập nhật lại UI lập tức
                         initUI();
 
-                        // Giữ lại mã hàng vừa chọn và tính lại tổng đã nhận
                         if (maHang) {
                             itemCodeSelect.value = maHang;
                             itemCodeSelect.dispatchEvent(new Event('change'));
@@ -618,7 +622,7 @@
             });
 
             document.getElementById("history-button").addEventListener("click", function () {
-                alert("Tính năng Lịch sử đang được cập nhật.");
+                window.location.href = "history.html";
             });
 
             document.getElementById("logout-button").addEventListener("click", function () {

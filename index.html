@@ -246,13 +246,13 @@
                 </td>
             </tr>
             <tr>
-                <th>Số bịch (hoặc kg)</th>
+                <th>Số thùng</th>
                 <td>
                     <input type="number" id="box-count-input" inputmode="numeric" min="0" placeholder="Nhập số thùng">
                 </td>
             </tr>
             <tr>
-                <th>Định lượng / bịch (hoặc kg)</th>
+                <th>Số lượng/thùng</th>
                 <td>
                     <input type="number" id="box-qty-input" inputmode="decimal" min="0" placeholder="Nhập số lượng/thùng">
                     <span id="batch-preview" class="batch-preview">Tổng đợt này: 0 Mét</span>
@@ -390,9 +390,15 @@
                         unitSelect.value = lastUnit;
                     }
                 }
+
+                // Khôi phục trạng thái Ẩn/Hiện khối thông tin người dùng từ localStorage
+                const savedToggleState = localStorage.getItem("userInfoDisplayState");
+                if (savedToggleState) {
+                    userInfoContainer.style.display = savedToggleState;
+                }
             }
 
-            // --- 5. CHỌN MÃ HÀNG TỰ ĐỘNG (Xử lý mượt màu thun, loại thun & bàn phím) ---
+            // --- 5. CHỌN MÃ HÀNG TỰ ĐỘNG (Mượt màu thun, loại thun & bàn phím) ---
             itemCodeSelect.addEventListener("change", function () {
                 const selectedMaHang = this.value;
                 const appData = getAppData();
@@ -410,7 +416,7 @@
 
                 const itemData = appData.form.listMH[selectedMaHang] || {};
 
-                // Tự động điền loại thun (ô này có thuộc tính readonly ở HTML nên không sửa được)
+                // Tự động điền loại thun (readonly)
                 elasticTypeInput.value = itemData.loaiThun || "";
                 
                 const totalOrder = Number(itemData.tongThunDonHang || 0);
@@ -433,7 +439,7 @@
                     });
                 }
 
-                // Tự động nhận diện màu nếu chỉ có 1 lựa chọn
+                // Tự động chọn màu nếu chỉ có 1 lựa chọn
                 if (colors.length === 1) {
                     colorSelect.value = colors[0];
 
@@ -613,18 +619,25 @@
                 });
             }
 
-            // Gắn sự kiện các nút
+            // --- 8. GẮN SỰ KIỆN NÚT BẤM ---
             document.getElementById("refresh-button").addEventListener("click", updateData);
             document.getElementById("submit-button").addEventListener("click", writeData);
 
+            // Nút Ẩn/Hiện thông tin người dùng + Ghi nhớ vào localStorage
             document.getElementById("toggle-button").addEventListener("click", function () {
-                userInfoContainer.style.display = (userInfoContainer.style.display === "none") ? "block" : "none";
+                const isHidden = userInfoContainer.style.display === "none";
+                const newDisplayState = isHidden ? "block" : "none";
+                
+                userInfoContainer.style.display = newDisplayState;
+                localStorage.setItem("userInfoDisplayState", newDisplayState);
             });
 
+            // Nút Lịch sử chuyển hướng sang history.html
             document.getElementById("history-button").addEventListener("click", function () {
                 window.location.href = "history.html";
             });
 
+            // Nút Đăng xuất
             document.getElementById("logout-button").addEventListener("click", function () {
                 if (confirm("Bạn có chắc chắn muốn đăng xuất?")) {
                     localStorage.removeItem(APP_STORAGE_KEY);
@@ -632,7 +645,7 @@
                 }
             });
 
-            // Khởi chạy
+            // Khởi chạy ban đầu
             initUI();
         });
     </script>

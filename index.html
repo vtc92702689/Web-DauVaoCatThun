@@ -396,6 +396,8 @@
                 if (savedToggleState) {
                     userInfoContainer.style.display = savedToggleState;
                 }
+
+                updateBatchPreview();
             }
 
             // --- 5. CHỌN MÃ HÀNG TỰ ĐỘNG (Mượt màu thun, loại thun & bàn phím) ---
@@ -457,13 +459,26 @@
                 if (this.value) {
                     localStorage.setItem("lastSelectedUnit", this.value);
                 }
+                updateBatchPreview();
             });
 
             function updateBatchPreview() {
                 const st = parseFloat(boxCountInput.value) || 0;
                 const slt = parseFloat(boxQtyInput.value) || 0;
-                const total = st * slt;
-                batchPreviewEl.textContent = `Tổng đợt này: ${total.toLocaleString('vi-VN')} Mét`;
+                let total = st * slt;
+
+                const unit = (unitSelect.value || "").trim().toUpperCase();
+
+                // Quy đổi sang Mét nếu chọn YARD (1 Yard = 0.9144 Mét)
+                if (unit.includes("YARD")) {
+                    total = total * 0.9144;
+                }
+
+                const formattedTotal = (total % 1 !== 0)
+                    ? total.toLocaleString('vi-VN', { minimumFractionDigits: 0, maximumFractionDigits: 2 })
+                    : total.toLocaleString('vi-VN');
+
+                batchPreviewEl.textContent = `Tổng đợt này: ${formattedTotal} Mét`;
             }
 
             boxCountInput.addEventListener("input", updateBatchPreview);

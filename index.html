@@ -246,13 +246,13 @@
                 </td>
             </tr>
             <tr>
-                <th>Số thùng</th>
+                <th>Số kiện (hoặc kg)</th>
                 <td>
                     <input type="number" id="box-count-input" inputmode="numeric" min="0" placeholder="Nhập số thùng">
                 </td>
             </tr>
             <tr>
-                <th>Số lượng/thùng</th>
+                <th>Định lượng/ 1 Đơn vị</th>
                 <td>
                     <input type="number" id="box-qty-input" inputmode="decimal" min="0" placeholder="Nhập số lượng/thùng">
                     <span id="batch-preview" class="batch-preview">Tổng đợt này: 0 Mét</span>
@@ -278,7 +278,7 @@
     <script>
         document.addEventListener("DOMContentLoaded", function () {
             const APP_STORAGE_KEY = "appData_QuanLyNhapThun_DKien";
-            const BASE_API_URL = "https://script.google.com/macros/s/AKfycbyC6vwJx1Vo7TWH6Ty3gLWr2Pe-aFTn47ZyWCOHa8JC6ClpVkD5jLgdVLmw-N5yRQ8/exec";
+            const BASE_API_URL = "https://script.google.com/macros/s/AKfycbzY7Ubne81Sz5T8quWPm_sVNszFyT3HIc9GJylEHyHNHxh_2qD_IqhV2pZQk_PkIik/exec";
 
             // Mặc định ngày hiện tại
             const today = new Date().toISOString().split('T')[0];

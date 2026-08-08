@@ -1,0 +1,309 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Lịch Sử Nhập Thun</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background-color: #f4f6f8;
+            margin: 0;
+            padding: 0 0 30px 0;
+            color: #333;
+        }
+
+        /* HEADER & CÁC NÚT ĐIỀU HƯỚNG */
+        .header-bar {
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            background-color: #ffffff;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 10px 15px;
+            border-bottom: 1px solid #e0e0e0;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+        }
+
+        .back-btn {
+            background-color: #007BFF;
+            color: white;
+            border: none;
+            padding: 8px 14px;
+            font-size: 14px;
+            font-weight: 600;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: background-color 0.2s, transform 0.1s;
+        }
+
+        .back-btn:active {
+            transform: scale(0.96);
+            background-color: #0056b3;
+        }
+
+        .page-title {
+            font-size: 16px;
+            font-weight: bold;
+            color: #2c3e50;
+            margin: 0;
+        }
+
+        .total-badge {
+            font-size: 12px;
+            background-color: #e9ecef;
+            color: #495057;
+            padding: 4px 8px;
+            border-radius: 12px;
+            font-weight: 600;
+        }
+
+        /* THANH TÌM KIẾM */
+        .search-container {
+            width: 94%;
+            max-width: 500px;
+            margin: 12px auto 6px auto;
+        }
+
+        .search-input {
+            width: 100%;
+            height: 40px;
+            padding: 8px 12px;
+            border: 1px solid #ccc;
+            border-radius: 8px;
+            font-size: 14px;
+            outline: none;
+            background-color: #fff;
+            transition: border-color 0.2s;
+        }
+
+        .search-input:focus {
+            border-color: #007BFF;
+        }
+
+        /* DANH SÁCH THẺ CARD LỊCH SỬ */
+        .history-list {
+            width: 94%;
+            max-width: 500px;
+            margin: 0 auto;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .history-card {
+            background-color: #e9ecef;
+            border-radius: 12px;
+            padding: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.06);
+            border: 1px solid #dee2e6;
+        }
+
+        /* CỘT TRÁI: ID NHẬP LIỆU */
+        .card-left {
+            width: 28%;
+            font-weight: bold;
+            color: #dc3545;
+            font-size: 14px;
+            word-break: break-all;
+            text-align: left;
+        }
+
+        /* CỘT GIỮA: THÔNG TIN CHI TIẾT */
+        .card-center {
+            width: 46%;
+            text-align: left;
+            font-size: 13px;
+            line-height: 1.45;
+            color: #212529;
+            padding: 0 4px;
+        }
+
+        .card-center div {
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .card-center .total-row {
+            font-weight: bold;
+            color: #000;
+            margin-top: 2px;
+        }
+
+        /* CỘT PHẢI: LOẠI THUN & MÀU */
+        .card-right {
+            width: 26%;
+            text-align: right;
+            font-size: 13px;
+            font-weight: bold;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            gap: 8px;
+        }
+
+        .card-right .loai-thun {
+            color: #007bff;
+            word-break: break-word;
+        }
+
+        .card-right .mau-thun {
+            color: #fd7e14;
+            word-break: break-word;
+        }
+
+        .empty-state {
+            margin-top: 40px;
+            color: #6c757d;
+            font-size: 15px;
+            text-align: center;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- HEADER / THANH ĐIỀU HƯỚNG -->
+    <div class="header-bar">
+        <button class="back-btn" onclick="goToHome()">❮ Trang chủ</button>
+        <span class="page-title">Lịch Sử Nhập Thun</span>
+        <span class="total-badge" id="record-count">0 mục</span>
+    </div>
+
+    <!-- TÌM KIẾM NHANH -->
+    <div class="search-container">
+        <input type="text" id="search-input" class="search-input" placeholder="🔍 Tìm theo Mã hàng, Màu, ID...">
+    </div>
+
+    <!-- DANH SÁCH THẺ LỊCH SỬ -->
+    <div class="history-list" id="history-container">
+        <!-- Render dữ liệu -->
+    </div>
+
+    <script>
+        // CẤU HÌNH SỐ LƯỢNG HIỂN THỊ TỐI ĐA (DỄ DÀNG THAY ĐỔI TẠI ĐÂY)
+        const MAX_HISTORY_LIMIT = 100; 
+
+        const APP_STORAGE_KEY = "appData_QuanLyNhapThun_DKien";
+
+        function goToHome() {
+            window.location.href = "index.html";
+        }
+
+        function getAppData() {
+            const jsonData = localStorage.getItem(APP_STORAGE_KEY);
+            if (!jsonData) return null;
+            try {
+                return JSON.parse(jsonData);
+            } catch (e) {
+                console.error("Lỗi parse JSON:", e);
+                return null;
+            }
+        }
+
+        function renderHistory(filterKeyword = "") {
+            const container = document.getElementById("history-container");
+            const countBadge = document.getElementById("record-count");
+            const appData = getAppData();
+
+            if (!appData || !appData.data) {
+                container.innerHTML = '<div class="empty-state">Chưa có dữ liệu lịch sử.</div>';
+                countBadge.textContent = "0 mục";
+                return;
+            }
+
+            const rawData = appData.data;
+            let itemList = Array.isArray(rawData) ? rawData : Object.values(rawData);
+
+            // 1. Sắp xếp mới nhất lên đầu
+            itemList.sort((a, b) => {
+                const idA = String(a.idNhapLieu || a.stt || "");
+                const idB = String(b.idNhapLieu || b.stt || "");
+                return idB.localeCompare(idA, undefined, { numeric: true });
+            });
+
+            // 2. Tìm kiếm nhanh theo từ khóa
+            if (filterKeyword.trim() !== "") {
+                const kw = filterKeyword.toLowerCase().trim();
+                itemList = itemList.filter(item => {
+                    const id = String(item.idNhapLieu || "").toLowerCase();
+                    const maHang = String(item.maHang || "").toLowerCase();
+                    const mau = String(item.mau || "").toLowerCase();
+                    const loaiThun = String(item.loaiThun || "").toLowerCase();
+                    const ngayNhan = String(item.ngayNhan || "").toLowerCase();
+
+                    return id.includes(kw) || maHang.includes(kw) || mau.includes(kw) || loaiThun.includes(kw) || ngayNhan.includes(kw);
+                });
+            }
+
+            // 3. Giới hạn số lượng bản ghi hiển thị
+            const limitedList = itemList.slice(0, MAX_HISTORY_LIMIT);
+            countBadge.textContent = `${limitedList.length} / ${itemList.length} mục`;
+
+            if (limitedList.length === 0) {
+                container.innerHTML = '<div class="empty-state">Không tìm thấy dữ liệu phù hợp.</div>';
+                return;
+            }
+
+            // 4. Render nội dung thẻ theo nhãn mới
+            let htmlContent = "";
+            limitedList.forEach(item => {
+                const idNhapLieu = item.idNhapLieu || item.stt || "---";
+                const ngayNhan = item.ngayNhan || "---";
+                const maHang = item.maHang || "---";
+                const loaiThun = item.loaiThun || "---";
+                const mau = item.mau || "---";
+                const soThung = parseFloat(item.soThung || 0) || 0;
+                const soLuongThung = parseFloat(item.soLuongThung || 0) || 0;
+
+                // Tính tổng = số bịch (hoặc kg) * định lượng
+                const tongSoLuong = (soThung * soLuongThung).toLocaleString('vi-VN');
+
+                htmlContent += `
+                    <div class="history-card">
+                        <!-- Cột trái: idNhapLieu -->
+                        <div class="card-left">
+                            ${idNhapLieu}
+                        </div>
+
+                        <!-- Cột giữa: Chi tiết thông số (Đã cập nhật nhãn mới) -->
+                        <div class="card-center">
+                            <div>Ngày nhận: ${ngayNhan}</div>
+                            <div>Mã hàng: ${maHang}</div>
+                            <div>Số bịch (hoặc kg): ${soThung.toLocaleString('vi-VN')}</div>
+                            <div>Định lượng: ${soLuongThung.toLocaleString('vi-VN')}</div>
+                            <div class="total-row">Tổng: ${tongSoLuong} Mét</div>
+                        </div>
+
+                        <!-- Cột phải: loaiThun & mauThun -->
+                        <div class="card-right">
+                            <span class="loai-thun">${loaiThun}</span>
+                            <span class="mau-thun">${mau}</span>
+                        </div>
+                    </div>
+                `;
+            });
+
+            container.innerHTML = htmlContent;
+        }
+
+        document.getElementById("search-input").addEventListener("input", function () {
+            renderHistory(this.value);
+        });
+
+        document.addEventListener("DOMContentLoaded", function () {
+            renderHistory();
+        });
+    </script>
+</body>
+</html>

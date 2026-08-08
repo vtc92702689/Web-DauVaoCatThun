@@ -191,7 +191,7 @@
     </div>
 
     <script>
-        // CẤU HÌNH SỐ LƯỢNG HIỂN THỊ TỐI ĐA (DỄ DÀNG THAY ĐỔI TẠI ĐÂY)
+        // CẤU HÌNH SỐ LƯỢNG HIỂN THỊ TỐI ĐA
         const MAX_HISTORY_LIMIT = 100; 
 
         const APP_STORAGE_KEY = "appData_QuanLyNhapThun_DKien";
@@ -241,8 +241,9 @@
                     const mau = String(item.mau || "").toLowerCase();
                     const loaiThun = String(item.loaiThun || "").toLowerCase();
                     const ngayNhan = String(item.ngayNhan || "").toLowerCase();
+                    const donViTinh = String(item.donViTinh || item.donVi || "").toLowerCase();
 
-                    return id.includes(kw) || maHang.includes(kw) || mau.includes(kw) || loaiThun.includes(kw) || ngayNhan.includes(kw);
+                    return id.includes(kw) || maHang.includes(kw) || mau.includes(kw) || loaiThun.includes(kw) || ngayNhan.includes(kw) || donViTinh.includes(kw);
                 });
             }
 
@@ -255,7 +256,7 @@
                 return;
             }
 
-            // 4. Render nội dung thẻ theo nhãn mới
+            // 4. Render nội dung thẻ
             let htmlContent = "";
             limitedList.forEach(item => {
                 const idNhapLieu = item.idNhapLieu || item.stt || "---";
@@ -265,9 +266,24 @@
                 const mau = item.mau || "---";
                 const soThung = parseFloat(item.soThung || 0) || 0;
                 const soLuongThung = parseFloat(item.soLuongThung || 0) || 0;
+                const donVi = (item.donViTinh || item.donVi || "").trim();
 
-                // Tính tổng = số bịch (hoặc kg) * định lượng
-                const tongSoLuong = (soThung * soLuongThung).toLocaleString('vi-VN');
+                let tongSoLuong = soThung * soLuongThung;
+                let tongDonVi = donVi || "Mét";
+
+                // Quy đổi sang Mét nếu đơn vị là YARD (1 Yard = 0.9144 Mét)
+                const unitUpper = donVi.toUpperCase();
+                if (unitUpper.includes("YARD")) {
+                    tongSoLuong = tongSoLuong * 0.9144;
+                    tongDonVi = "Mét";
+                }
+
+                // Định dạng hiển thị tổng số lượng
+                const formattedTong = (tongSoLuong % 1 !== 0)
+                    ? tongSoLuong.toLocaleString('vi-VN', { minimumFractionDigits: 0, maximumFractionDigits: 2 })
+                    : tongSoLuong.toLocaleString('vi-VN');
+
+                const displayDonVi = donVi ? ` ${donVi}` : "";
 
                 htmlContent += `
                     <div class="history-card">
@@ -276,13 +292,13 @@
                             ${idNhapLieu}
                         </div>
 
-                        <!-- Cột giữa: Chi tiết thông số (Đã cập nhật nhãn mới) -->
+                        <!-- Cột giữa: Chi tiết thông số -->
                         <div class="card-center">
                             <div>Ngày nhận: ${ngayNhan}</div>
                             <div>Mã hàng: ${maHang}</div>
                             <div>Số kiện (hoặc kg): ${soThung.toLocaleString('vi-VN')}</div>
-                            <div>Định lượng: ${soLuongThung.toLocaleString('vi-VN')}</div>
-                            <div class="total-row">Tổng: ${tongSoLuong} Mét</div>
+                            <div>Định lượng: ${soLuongThung.toLocaleString('vi-VN')}${displayDonVi}</div>
+                            <div class="total-row">Tổng: ${formattedTong} ${tongDonVi}</div>
                         </div>
 
                         <!-- Cột phải: loaiThun & mauThun -->

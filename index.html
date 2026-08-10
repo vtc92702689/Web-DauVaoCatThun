@@ -351,8 +351,11 @@
             // --- 4. HIỂN THỊ DỮ LIỆU LÊN GIAO DIỆN ---
             function initUI() {
                 const appData = getAppData();
-                if (!appData || !appData.user) {
+                const auth = getAuthInfo(appData);
+
+                if (!appData || !appData.user || !auth) {
                     alert("Phiên đăng nhập không hợp lệ hoặc đã hết hạn. Vui lòng đăng nhập lại!");
+                    localStorage.removeItem(APP_STORAGE_KEY);
                     window.location.href = "login.html";
                     return;
                 }
@@ -498,6 +501,7 @@
 
                 if (!auth) {
                     alert("Không tìm thấy Token xác thực. Vui lòng đăng nhập lại!");
+                    localStorage.removeItem(APP_STORAGE_KEY);
                     window.location.href = "login.html";
                     return;
                 }
@@ -530,7 +534,10 @@
                         initUI();
                         alert(response.notification || "Cập nhật dữ liệu thành công!");
                     } else {
+                        // Bổ sung: Chuyển hướng về trang đăng nhập khi xác thực thất bại
                         alert(response.notification || "Xác thực thất bại từ máy chủ.");
+                        localStorage.removeItem(APP_STORAGE_KEY);
+                        window.location.href = "login.html";
                     }
                 })
                 .catch(err => {
@@ -549,6 +556,7 @@
 
                 if (!auth) {
                     alert("Không tìm thấy Token xác thực. Vui lòng đăng nhập lại!");
+                    localStorage.removeItem(APP_STORAGE_KEY);
                     window.location.href = "login.html";
                     return;
                 }
@@ -623,6 +631,12 @@
                         alert(response.notification || "Gửi dữ liệu thành công!");
                     } else {
                         alert(response.notification || "Gửi dữ liệu thất bại.");
+                        // Bổ sung: Kiểm tra phản hồi nếu là lỗi xác thực thì trả về trang đăng nhập
+                        const noti = (response.notification || "").toLowerCase();
+                        if (response.status === "auth_error" || noti.includes("xác thực") || noti.includes("token") || noti.includes("đăng nhập")) {
+                            localStorage.removeItem(APP_STORAGE_KEY);
+                            window.location.href = "login.html";
+                        }
                     }
                 })
                 .catch(err => {

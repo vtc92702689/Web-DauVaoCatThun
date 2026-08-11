@@ -280,6 +280,10 @@
             const APP_STORAGE_KEY = "appData_QuanLyNhapThun_DKien";
             const BASE_API_URL = "https://script.google.com/macros/s/AKfycbzY7Ubne81Sz5T8quWPm_sVNszFyT3HIc9GJylEHyHNHxh_2qD_IqhV2pZQk_PkIik/exec";
 
+            // --- CẤU HÌNH TỰ ĐỘNG LÀM MỚI TÁCH BIỆT ---
+            const AUTO_REFRESH_MINUTES = 30; // Thay đổi số phút hết hạn truy cập tại đây
+            const LAST_ACCESS_KEY = "lastAccessTime_QuanLyNhapThun_DKien";
+
             // Mặc định ngày hiện tại
             const today = new Date().toISOString().split('T')[0];
             document.getElementById("date-input").value = today;
@@ -403,12 +407,11 @@
                 updateBatchPreview();
             }
 
-            // --- 5. CHỌN MÃ HÀNG TỰ ĐỘNG (Mượt màu thun, loại thun & bàn phím) ---
+            // --- 5. CHỌN MÃ HÀNG TỰ ĐỘNG ---
             itemCodeSelect.addEventListener("change", function () {
                 const selectedMaHang = this.value;
                 const appData = getAppData();
 
-                // Giải phóng focus để ép đóng Menu Native chọn mã hàng
                 this.blur();
 
                 if (!selectedMaHang || !appData || !appData.form || !appData.form.listMH) {
@@ -421,7 +424,6 @@
 
                 const itemData = appData.form.listMH[selectedMaHang] || {};
 
-                // Tự động điền loại thun (readonly)
                 elasticTypeInput.value = itemData.loaiThun || "";
                 
                 const totalOrder = Number(itemData.tongThunDonHang || 0);
@@ -444,11 +446,9 @@
                     });
                 }
 
-                // Tự động chọn màu nếu chỉ có 1 lựa chọn
                 if (colors.length === 1) {
                     colorSelect.value = colors[0];
 
-                    // Đợi 350ms cho Menu chọn Mã hàng đóng hẳn rồi mới kích hoạt bàn phím ô Số thùng
                     setTimeout(() => {
                         boxCountInput.focus();
                     }, 350);
@@ -472,7 +472,6 @@
 
                 const unit = (unitSelect.value || "").trim().toUpperCase();
 
-                // Quy đổi sang Mét nếu chọn YARD (1 Yard = 0.9144 Mét)
                 if (unit.includes("YARD")) {
                     total = total * 0.9144;
                 }
@@ -531,10 +530,13 @@
                             data: response.data || appData.data
                         };
                         localStorage.setItem(APP_STORAGE_KEY, JSON.stringify(updatedAppData));
+                        
+                        // Cập nhật mốc thời gian làm mới thành công
+                        localStorage.setItem(LAST_ACCESS_KEY, Date.now().toString());
+                        
                         initUI();
                         alert(response.notification || "Cập nhật dữ liệu thành công!");
                     } else {
-                        // Bổ sung: Chuyển hướng về trang đăng nhập khi xác thực thất bại
                         alert(response.notification || "Xác thực thất bại từ máy chủ.");
                         localStorage.removeItem(APP_STORAGE_KEY);
                         window.location.href = "login.html";
@@ -631,7 +633,6 @@
                         alert(response.notification || "Gửi dữ liệu thành công!");
                     } else {
                         alert(response.notification || "Gửi dữ liệu thất bại.");
-                        // Bổ sung: Kiểm tra phản hồi nếu là lỗi xác thực thì trả về trang đăng nhập
                         const noti = (response.notification || "").toLowerCase();
                         if (response.status === "auth_error" || noti.includes("xác thực") || noti.includes("token") || noti.includes("đăng nhập")) {
                             localStorage.removeItem(APP_STORAGE_KEY);
@@ -648,11 +649,28 @@
                 });
             }
 
-            // --- 8. GẮN SỰ KIỆN NÚT BẤM ---
+            // --- 8. KIỂM TRA THỜI GIAN VÀ TỰ ĐỘNG LÀM MỚI ---
+            function checkAutoRefresh() {
+                const now = Date.now();
+                const lastAccess = localStorage.getItem(LAST_ACCESS_KEY);
+
+                if (lastAccess) {
+                    const elapsedMinutes = (now - parseInt(lastAccess, 10)) / (1000 * 60);
+                    // Nếu số phút trôi qua lớn hơn AUTO_REFRESH_MINUTES thì tiến hành làm mới
+                    if (elapsedMinutes > AUTO_REFRESH_MINUTES) {
+                        updateData();
+                        return;
+                    }
+                }
+
+                // Cập nhật lại mốc thời gian truy cập hiện tại
+                localStorage.setItem(LAST_ACCESS_KEY, now.toString());
+            }
+
+            // --- 9. GẮN SỰ KIỆN NÚT BẤM ---
             document.getElementById("refresh-button").addEventListener("click", updateData);
             document.getElementById("submit-button").addEventListener("click", writeData);
 
-            // Nút Ẩn/Hiện thông tin người dùng + Ghi nhớ vào localStorage
             document.getElementById("toggle-button").addEventListener("click", function () {
                 const isHidden = userInfoContainer.style.display === "none";
                 const newDisplayState = isHidden ? "block" : "none";
@@ -661,21 +679,28 @@
                 localStorage.setItem("userInfoDisplayState", newDisplayState);
             });
 
-            // Nút Lịch sử chuyển hướng sang history.html
             document.getElementById("history-button").addEventListener("click", function () {
                 window.location.href = "history.html";
             });
 
-            // Nút Đăng xuất
             document.getElementById("logout-button").addEventListener("click", function () {
                 if (confirm("Bạn có chắc chắn muốn đăng xuất?")) {
                     localStorage.removeItem(APP_STORAGE_KEY);
+                    localStorage.removeItem(LAST_ACCESS_KEY);
                     window.location.href = "login.html";
                 }
             });
 
-            // Khởi chạy ban đầu
+            // Lắng nghe khi người dùng chuyển lại tab này
+            document.addEventListener("visibilitychange", function () {
+                if (document.visibilityState === "visible") {
+                    checkAutoRefresh();
+                }
+            });
+
+            // Khởi chạy giao diện ban đầu & kiểm tra tự động làm mới
             initUI();
+            checkAutoRefresh();
         });
     </script>
 </body>

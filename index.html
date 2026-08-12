@@ -165,14 +165,63 @@
             background-color: #218838;
         }
 
-        .loading {
-            opacity: 0.6;
-            cursor: not-allowed !important;
-            pointer-events: none;
+        /* --- LOADING OVERLAY POPUP GIỮA MÀN HÌNH --- */
+        .loading-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            background-color: rgba(0, 0, 0, 0.45);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 9999;
+            backdrop-filter: blur(2px);
+        }
+
+        .loading-box {
+            background-color: #ffffff;
+            padding: 22px 30px;
+            border-radius: 12px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 12px;
+            min-width: 170px;
+        }
+
+        .spinner {
+            width: 38px;
+            height: 38px;
+            border: 4px solid #e9ecef;
+            border-top: 4px solid #007BFF;
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .loading-text {
+            font-size: 15px;
+            font-weight: 600;
+            color: #333;
         }
     </style>
 </head>
 <body>
+
+    <!-- OVERLAY LOADING GIỮA MÀN HÌNH -->
+    <div id="loading-overlay" class="loading-overlay">
+        <div class="loading-box">
+            <div class="spinner"></div>
+            <div id="loading-text" class="loading-text">Đang xử lý...</div>
+        </div>
+    </div>
 
     <!-- THANH NÚT BẤM TÁC VỤ -->
     <div class="top-button-container">
@@ -280,8 +329,7 @@
             const APP_STORAGE_KEY = "appData_QuanLyNhapThun_DKien";
             const BASE_API_URL = "https://script.google.com/macros/s/AKfycbzY7Ubne81Sz5T8quWPm_sVNszFyT3HIc9GJylEHyHNHxh_2qD_IqhV2pZQk_PkIik/exec";
 
-            // --- CẤU HÌNH TỰ ĐỘNG LÀM MỚI TÁCH BIỆT ---
-            const AUTO_REFRESH_MINUTES = 30; // Thay đổi số phút hết hạn truy cập tại đây
+            const AUTO_REFRESH_MINUTES = 30;
             const LAST_ACCESS_KEY = "lastAccessTime_QuanLyNhapThun_DKien";
 
             // Mặc định ngày hiện tại
@@ -305,6 +353,19 @@
             const batchPreviewEl = document.getElementById("batch-preview");
             const unitSelect = document.getElementById("unit-select");
             const userInfoContainer = document.getElementById("user-info-container");
+
+            // Element Popup Loading
+            const loadingOverlay = document.getElementById("loading-overlay");
+            const loadingText = document.getElementById("loading-text");
+
+            function showLoading(msg = "Đang xử lý...") {
+                loadingText.textContent = msg;
+                loadingOverlay.style.display = "flex";
+            }
+
+            function hideLoading() {
+                loadingOverlay.style.display = "none";
+            }
 
             // --- 1. LẤY DỮ LIỆU TỪ LOCALSTORAGE ---
             function getAppData() {
@@ -398,7 +459,6 @@
                     }
                 }
 
-                // Khôi phục trạng thái Ẩn/Hiện khối thông tin người dùng từ localStorage
                 const savedToggleState = localStorage.getItem("userInfoDisplayState");
                 if (savedToggleState) {
                     userInfoContainer.style.display = savedToggleState;
@@ -505,8 +565,8 @@
                     return;
                 }
 
-                const refreshBtn = document.getElementById("refresh-button");
-                refreshBtn.classList.add("loading");
+                // Hiển thị Popup Loading
+                showLoading("Đang tải dữ liệu...");
 
                 const requestBody = `func=update` +
                     `&id=${encodeURIComponent(auth.userId)}` +
@@ -530,13 +590,12 @@
                             data: response.data || appData.data
                         };
                         localStorage.setItem(APP_STORAGE_KEY, JSON.stringify(updatedAppData));
-                        
-                        // Cập nhật mốc thời gian làm mới thành công
                         localStorage.setItem(LAST_ACCESS_KEY, Date.now().toString());
                         
                         initUI();
-                        alert(response.notification || "Cập nhật dữ liệu thành công!");
+                        // Thành công: Im lặng cập nhật UI, không bật alert
                     } else {
+                        // Thất bại: Hiện alert thông báo lỗi
                         alert(response.notification || "Xác thực thất bại từ máy chủ.");
                         localStorage.removeItem(APP_STORAGE_KEY);
                         window.location.href = "login.html";
@@ -547,7 +606,8 @@
                     alert("Có lỗi kết nối mạng!");
                 })
                 .finally(() => {
-                    refreshBtn.classList.remove("loading");
+                    // Tắt Popup Loading
+                    hideLoading();
                 });
             }
 
@@ -583,8 +643,8 @@
                     return;
                 }
 
-                const submitBtn = document.getElementById("submit-button");
-                submitBtn.classList.add("loading");
+                // Hiển thị Popup Loading
+                showLoading("Đang gửi dữ liệu...");
 
                 const requestBody = `func=writeData` +
                     `&id=${encodeURIComponent(auth.userId)}` +
@@ -630,8 +690,9 @@
                             itemCodeSelect.dispatchEvent(new Event('change'));
                         }
 
-                        alert(response.notification || "Gửi dữ liệu thành công!");
+                        // Thành công: Im lặng cập nhật UI, không bật alert
                     } else {
+                        // Thất bại: Hiện alert thông báo lỗi
                         alert(response.notification || "Gửi dữ liệu thất bại.");
                         const noti = (response.notification || "").toLowerCase();
                         if (response.status === "auth_error" || noti.includes("xác thực") || noti.includes("token") || noti.includes("đăng nhập")) {
@@ -645,7 +706,8 @@
                     alert("Có lỗi khi gửi dữ liệu!");
                 })
                 .finally(() => {
-                    submitBtn.classList.remove("loading");
+                    // Tắt Popup Loading
+                    hideLoading();
                 });
             }
 
@@ -656,14 +718,12 @@
 
                 if (lastAccess) {
                     const elapsedMinutes = (now - parseInt(lastAccess, 10)) / (1000 * 60);
-                    // Nếu số phút trôi qua lớn hơn AUTO_REFRESH_MINUTES thì tiến hành làm mới
                     if (elapsedMinutes > AUTO_REFRESH_MINUTES) {
                         updateData();
                         return;
                     }
                 }
 
-                // Cập nhật lại mốc thời gian truy cập hiện tại
                 localStorage.setItem(LAST_ACCESS_KEY, now.toString());
             }
 

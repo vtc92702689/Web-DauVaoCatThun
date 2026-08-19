@@ -206,6 +206,31 @@
             100% { transform: rotate(360deg); }
         }
 
+        /* --- BIỂU TƯỢNG V XANH LÁ ANIMATION --- */
+        .checkmark-svg {
+            width: 42px;
+            height: 42px;
+            display: none;
+        }
+
+        .checkmark-circle {
+            stroke-dasharray: 166;
+            stroke-dashoffset: 166;
+            animation: stroke 0.4s cubic-bezier(0.65, 0, 0.45, 1) forwards;
+        }
+
+        .checkmark-check {
+            stroke-dasharray: 48;
+            stroke-dashoffset: 48;
+            animation: stroke 0.3s cubic-bezier(0.65, 0, 0.45, 1) 0.3s forwards;
+        }
+
+        @keyframes stroke {
+            100% {
+                stroke-dashoffset: 0;
+            }
+        }
+
         .loading-text {
             font-size: 15px;
             font-weight: 600;
@@ -218,7 +243,11 @@
     <!-- OVERLAY LOADING GIỮA MÀN HÌNH -->
     <div id="loading-overlay" class="loading-overlay">
         <div class="loading-box">
-            <div class="spinner"></div>
+            <div id="loading-spinner" class="spinner"></div>
+            <svg id="loading-checkmark" class="checkmark-svg" viewBox="0 0 52 52">
+                <circle class="checkmark-circle" cx="26" cy="26" r="23" fill="none" stroke="#28a745" stroke-width="4"/>
+                <path class="checkmark-check" fill="none" stroke="#28a745" stroke-width="4" stroke-linecap="round" stroke-linejoin="round" d="M14 27 l7 7 l16 -16"/>
+            </svg>
             <div id="loading-text" class="loading-text">Đang xử lý...</div>
         </div>
     </div>
@@ -356,15 +385,49 @@
 
             // Element Popup Loading
             const loadingOverlay = document.getElementById("loading-overlay");
+            const loadingSpinner = document.getElementById("loading-spinner");
             const loadingText = document.getElementById("loading-text");
 
             function showLoading(msg = "Đang xử lý...") {
+                loadingSpinner.style.display = "block";
+                
+                // Luôn lấy phần tử checkmark hiện tại từ DOM
+                const checkmarkEl = document.getElementById("loading-checkmark");
+                if (checkmarkEl) {
+                    checkmarkEl.style.display = "none";
+                }
+                
                 loadingText.textContent = msg;
                 loadingOverlay.style.display = "flex";
             }
 
+            function showSuccess(msg = "Thành công!") {
+                loadingSpinner.style.display = "none";
+
+                // Clone và thay thế để kích hoạt lại animation SVG một cách tin cậy
+                const oldCheckmark = document.getElementById("loading-checkmark");
+                if (oldCheckmark) {
+                    const newCheckmark = oldCheckmark.cloneNode(true);
+                    newCheckmark.style.display = "block";
+                    oldCheckmark.parentNode.replaceChild(newCheckmark, oldCheckmark);
+                }
+
+                loadingText.textContent = msg;
+
+                // Giữ nguyên animation dấu tích trong 1 giây rồi tắt popup
+                setTimeout(() => {
+                    hideLoading();
+                }, 1000);
+            }
+
             function hideLoading() {
                 loadingOverlay.style.display = "none";
+                loadingSpinner.style.display = "block";
+                
+                const checkmarkEl = document.getElementById("loading-checkmark");
+                if (checkmarkEl) {
+                    checkmarkEl.style.display = "none";
+                }
             }
 
             // --- 1. LẤY DỮ LIỆU TỪ LOCALSTORAGE ---
@@ -573,6 +636,8 @@
                     `&idUser=${encodeURIComponent(auth.userId)}` +
                     `&token=${encodeURIComponent(auth.token)}`;
 
+                let isSuccess = false;
+
                 fetch(BASE_API_URL, {
                     method: "POST",
                     headers: { "Content-Type": "application/x-www-form-urlencoded" },
@@ -584,6 +649,7 @@
                 })
                 .then(response => {
                     if (response.status === "success") {
+                        isSuccess = true;
                         const updatedAppData = {
                             user: response.user || appData.user,
                             form: response.form || appData.form,
@@ -593,9 +659,9 @@
                         localStorage.setItem(LAST_ACCESS_KEY, Date.now().toString());
                         
                         initUI();
-                        // Thành công: Im lặng cập nhật UI, không bật alert
+                        // Chuyển sang dấu tích V xanh lá trong 1 giây
+                        showSuccess("Cập nhật thành công!");
                     } else {
-                        // Thất bại: Hiện alert thông báo lỗi
                         alert(response.notification || "Xác thực thất bại từ máy chủ.");
                         localStorage.removeItem(APP_STORAGE_KEY);
                         window.location.href = "login.html";
@@ -606,8 +672,9 @@
                     alert("Có lỗi kết nối mạng!");
                 })
                 .finally(() => {
-                    // Tắt Popup Loading
-                    hideLoading();
+                    if (!isSuccess) {
+                        hideLoading();
+                    }
                 });
             }
 
@@ -660,6 +727,8 @@
                     `&donViTinh=${encodeURIComponent(donViTinh)}` +
                     `&ghiChu=${encodeURIComponent(ghiChu)}`;
 
+                let isSuccess = false;
+
                 fetch(BASE_API_URL, {
                     method: "POST",
                     headers: { "Content-Type": "application/x-www-form-urlencoded" },
@@ -671,6 +740,7 @@
                 })
                 .then(response => {
                     if (response.status === "success") {
+                        isSuccess = true;
                         const updatedAppData = {
                             user: response.user || appData.user,
                             form: response.form || appData.form,
@@ -690,9 +760,9 @@
                             itemCodeSelect.dispatchEvent(new Event('change'));
                         }
 
-                        // Thành công: Im lặng cập nhật UI, không bật alert
+                        // Chuyển sang dấu tích V xanh lá trong 1 giây
+                        showSuccess("Gửi dữ liệu thành công!");
                     } else {
-                        // Thất bại: Hiện alert thông báo lỗi
                         alert(response.notification || "Gửi dữ liệu thất bại.");
                         const noti = (response.notification || "").toLowerCase();
                         if (response.status === "auth_error" || noti.includes("xác thực") || noti.includes("token") || noti.includes("đăng nhập")) {
@@ -706,8 +776,9 @@
                     alert("Có lỗi khi gửi dữ liệu!");
                 })
                 .finally(() => {
-                    // Tắt Popup Loading
-                    hideLoading();
+                    if (!isSuccess) {
+                        hideLoading();
+                    }
                 });
             }
 

@@ -356,7 +356,7 @@
     <script>
         document.addEventListener("DOMContentLoaded", function () {
             const APP_STORAGE_KEY = "appData_QuanLyNhapThun_DKien";
-            const BASE_API_URL = "https://script.google.com/macros/s/AKfycbzY7Ubne81Sz5T8quWPm_sVNszFyT3HIc9GJylEHyHNHxh_2qD_IqhV2pZQk_PkIik/exec";
+            const BASE_API_URL = "https://script.google.com/macros/s/AKfycby3XfG04Mxuy8axEBLgaVCdX83BRcquRaFo-w_Rl4UkR4SGEnla_0rbRiOIvp-qxXc/exec";
 
             const AUTO_REFRESH_MINUTES = 30;
             const LAST_ACCESS_KEY = "lastAccessTime_QuanLyNhapThun_DKien";
@@ -391,7 +391,6 @@
             function showLoading(msg = "Đang xử lý...") {
                 loadingSpinner.style.display = "block";
                 
-                // Luôn lấy phần tử checkmark hiện tại từ DOM
                 const checkmarkEl = document.getElementById("loading-checkmark");
                 if (checkmarkEl) {
                     checkmarkEl.style.display = "none";
@@ -404,7 +403,6 @@
             function showSuccess(msg = "Thành công!") {
                 loadingSpinner.style.display = "none";
 
-                // Clone và thay thế để kích hoạt lại animation SVG một cách tin cậy
                 const oldCheckmark = document.getElementById("loading-checkmark");
                 if (oldCheckmark) {
                     const newCheckmark = oldCheckmark.cloneNode(true);
@@ -414,7 +412,6 @@
 
                 loadingText.textContent = msg;
 
-                // Giữ nguyên animation dấu tích trong 1 giây rồi tắt popup
                 setTimeout(() => {
                     hideLoading();
                 }, 1000);
@@ -628,7 +625,6 @@
                     return;
                 }
 
-                // Hiển thị Popup Loading
                 showLoading("Đang tải dữ liệu...");
 
                 const requestBody = `func=update` +
@@ -659,7 +655,6 @@
                         localStorage.setItem(LAST_ACCESS_KEY, Date.now().toString());
                         
                         initUI();
-                        // Chuyển sang dấu tích V xanh lá trong 1 giây
                         showSuccess("Cập nhật thành công!");
                     } else {
                         alert(response.notification || "Xác thực thất bại từ máy chủ.");
@@ -678,7 +673,7 @@
                 });
             }
 
-            // --- 7. HÀM GỬI DỮ LIỆU ---
+            // --- 7. HÀM GỬI DỮ LIỆU - KIỂM SOÁT ĐẦU VÀO (CHỈ CHO PHÉP GHI CHÚ ĐỂ TRỐNG) ---
             function writeData() {
                 const appData = getAppData();
                 const auth = getAuthInfo(appData);
@@ -698,19 +693,57 @@
                 const soThung = boxCountInput.value;
                 const soLuongThung = boxQtyInput.value;
                 const donViTinh = unitSelect.value;
-                const ghiChu = document.getElementById("note-input").value;
+                const ghiChu = document.getElementById("note-input").value || "";
 
-                if (!ngayNhan || !maHang || !soThung || !soLuongThung || !donViTinh) {
-                    alert("Vui lòng điền đủ: Ngày, Mã hàng, Số thùng, Số lượng/thùng và Đơn vị!");
+                // --- KIỂM SOÁT BẮT BUỘC NHẬP ĐẦY ĐỦ CÁC TRƯỜNG ---
+                if (!ngayNhan) {
+                    alert("Vui lòng chọn Ngày nhận!");
+                    document.getElementById("date-input").focus();
                     return;
                 }
 
-                if (parseFloat(soThung) <= 0 || parseFloat(soLuongThung) <= 0) {
-                    alert("Số thùng và Số lượng/thùng phải lớn hơn 0!");
+                if (!maHang) {
+                    alert("Vui lòng chọn Mã hàng!");
+                    itemCodeSelect.focus();
                     return;
                 }
 
-                // Hiển thị Popup Loading
+                if (!mau) {
+                    alert("Vui lòng chọn Màu!");
+                    colorSelect.focus();
+                    return;
+                }
+
+                if (!soThung) {
+                    alert("Vui lòng nhập Số kiện (hoặc kg)!");
+                    boxCountInput.focus();
+                    return;
+                }
+
+                if (parseFloat(soThung) <= 0) {
+                    alert("Số kiện (hoặc kg) phải lớn hơn 0!");
+                    boxCountInput.focus();
+                    return;
+                }
+
+                if (!soLuongThung) {
+                    alert("Vui lòng nhập Định lượng / 1 Đơn vị!");
+                    boxQtyInput.focus();
+                    return;
+                }
+
+                if (parseFloat(soLuongThung) <= 0) {
+                    alert("Định lượng / 1 Đơn vị phải lớn hơn 0!");
+                    boxQtyInput.focus();
+                    return;
+                }
+
+                if (!donViTinh) {
+                    alert("Vui lòng chọn Đơn vị!");
+                    unitSelect.focus();
+                    return;
+                }
+
                 showLoading("Đang gửi dữ liệu...");
 
                 const requestBody = `func=writeData` +
@@ -760,7 +793,6 @@
                             itemCodeSelect.dispatchEvent(new Event('change'));
                         }
 
-                        // Chuyển sang dấu tích V xanh lá trong 1 giây
                         showSuccess("Gửi dữ liệu thành công!");
                     } else {
                         alert(response.notification || "Gửi dữ liệu thất bại.");
@@ -822,14 +854,12 @@
                 }
             });
 
-            // Lắng nghe khi người dùng chuyển lại tab này
             document.addEventListener("visibilitychange", function () {
                 if (document.visibilityState === "visible") {
                     checkAutoRefresh();
                 }
             });
 
-            // Khởi chạy giao diện ban đầu & kiểm tra tự động làm mới
             initUI();
             checkAutoRefresh();
         });

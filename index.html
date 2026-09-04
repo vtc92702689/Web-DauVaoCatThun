@@ -100,6 +100,42 @@
             word-break: break-word;
         }
 
+        /* --- STYLE HIỂN THỊ CÁC Ô SỐ LIỆU NỀN TRẮNG TỰ NHIÊN --- */
+        .stat-container {
+            display: flex;
+            gap: 6px;
+            width: 100%;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .stat-box {
+            flex: 1;
+            padding: 6px 4px;
+            text-align: center;
+            border-radius: 6px;
+            font-weight: bold;
+            font-size: 14px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 36px;
+            background-color: #ffffff;
+            border: 1px solid #e0e0e0;
+        }
+
+        .stat-box.green-dark {
+            color: #00b88a; /* Xanh lá đậm pha đen dễ nhìn */
+        }
+
+        .stat-box.red {
+            color: #dc3545; /* Đỏ khi vượt tổng đơn */
+        }
+
+        .stat-box.blue {
+            color: #007BFF; /* Xanh dương cho Tổng đơn */
+        }
+
         input[type="text"],
         input[type="number"],
         input[type="date"],
@@ -286,12 +322,22 @@
                 <td id="next-code" class="highlight-value">---</td>
             </tr>
             <tr>
-                <th>Tổng thun đơn hàng</th>
-                <td id="total-order-elastic" class="highlight-value">0</td>
+                <th> Đã Nhận /Tổng Đơn (M)</th>
+                <td id="total-order-elastic">
+                    <div class="stat-container">
+                        <div class="stat-box green-dark">0</div>
+                        <div class="stat-box blue">0</div>
+                    </div>
+                </td>
             </tr>
             <tr>
-                <th>Số lượng đã nhận</th>
-                <td id="received-qty" class="highlight-value" style="color: #dc3545;">0</td>
+                <th>Chi tiết nhận theo màu</th>
+                <td id="received-qty">
+                    <div class="stat-container">
+                        <div class="stat-box green-dark">0</div>
+                        <div class="stat-box blue">0</div>
+                    </div>
+                </td>
             </tr>
         </table>
     </div>
@@ -351,12 +397,12 @@
         </table>
     </div>
 
-    <button id="submit-button">Gửi dữ liệu</button>
+    <button id="submit-button">Gửi dữ liệu</button> 
 
     <script>
         document.addEventListener("DOMContentLoaded", function () {
             const APP_STORAGE_KEY = "appData_QuanLyNhapThun_DKien";
-            const BASE_API_URL = "https://script.google.com/macros/s/AKfycbz--ebof0EDHXhAPqpt_L7kI_exDJKwjE_7E_MimI4eRH1yacbMYCfuTdGfuld2cZc/exec";
+            const BASE_API_URL = "https://script.google.com/macros/s/AKfycbwO5_N0zFOjC4R_Mm_p7erdETZSFCpgHJeyKXOE13_mOKZpqaSmCy6g8d1Ucl2qiBo/exec";
 
             const AUTO_REFRESH_MINUTES = 30;
             const LAST_ACCESS_KEY = "lastAccessTime_QuanLyNhapThun_DKien";
@@ -450,10 +496,19 @@
                 return { userId, token };
             }
 
-            // --- 3. TÍNH TỔNG SỐ LƯỢNG ĐÃ NHẬN ---
+            // HÀM HỖ TRỢ: CẮT BỎ CÁC KÝ TỰ + HOẶC - Ở CỦỐI MÃ HÀNG
+            function getBaseMaHang(code) {
+                if (!code) return "";
+                return String(code).trim().replace(/[+\-]+$/, '').toLowerCase();
+            }
+
+            // --- 3. TÍNH TỔNG SỐ LƯỢNG ĐÃ NHẬN THEO MÃ HÀNG (GOM TẤT CẢ BIẾN THỂ +, - HOẶC KHÔNG DẤU) ---
             function calculateReceivedQuantity(selectedMaHang, appData) {
                 let total = 0;
-                if (!appData || !appData.data) return 0;
+                if (!appData || !appData.data || !selectedMaHang) return 0;
+
+                const baseSelected = getBaseMaHang(selectedMaHang);
+                if (!baseSelected) return 0;
 
                 const rows = Array.isArray(appData.data) 
                     ? appData.data 
@@ -461,9 +516,9 @@
 
                 rows.forEach(item => {
                     if (!item) return;
-                    const itemMaHang = item.maHang || "";
+                    const itemBase = getBaseMaHang(item.maHang);
 
-                    if (String(itemMaHang).trim().toLowerCase() === String(selectedMaHang).trim().toLowerCase()) {
+                    if (itemBase === baseSelected) {
                         const st = parseFloat(item.soThung || 0) || 0;
                         const slt = parseFloat(item.soLuongThung || 0) || 0;
                         total += (st * slt);
@@ -471,6 +526,99 @@
                 });
 
                 return total;
+            }
+
+            // --- 3.1. TÍNH TỔNG SỐ LƯỢNG ĐÃ NHẬN THEO LOẠI THUN, MÀU, MÃ HÀNG ---
+            function calculateReceivedQuantityByDetail(selectedMaHang, selectedLoaiThun, selectedMau, appData) {
+                let total = 0;
+                if (!appData || !appData.data || !selectedMaHang || !selectedMau) return 0;
+
+                const rows = Array.isArray(appData.data) 
+                    ? appData.data 
+                    : Object.values(appData.data);
+
+                rows.forEach(item => {
+                    if (!item) return;
+                    const itemMaHang = (item.maHang || "").toString().trim().toLowerCase();
+                    const itemLoaiThun = (item.loaiThun || "").toString().trim().toLowerCase();
+                    const itemMau = (item.mau || "").toString().trim().toLowerCase();
+
+                    const matchMa = itemMaHang === String(selectedMaHang).trim().toLowerCase();
+                    const matchLoai = !selectedLoaiThun || itemLoaiThun === String(selectedLoaiThun).trim().toLowerCase();
+                    const matchMau = itemMau === String(selectedMau).trim().toLowerCase();
+
+                    if (matchMa && matchLoai && matchMau) {
+                        const st = parseFloat(item.soThung || 0) || 0;
+                        const slt = parseFloat(item.soLuongThung || 0) || 0;
+                        total += (st * slt);
+                    }
+                });
+
+                return total;
+            }
+
+            // --- 3.2. TRÍCH XUẤT CHỈ TIÊU SỐ LƯỢNG TỪ JSON chiTietSoLuong (MÀU -> LOẠI THUN) ---
+            function getTargetQtyFromChiTiet(chiTietSoLuong, mau, loaiThun) {
+                if (!chiTietSoLuong || !mau || !loaiThun) return 0;
+                
+                let data = chiTietSoLuong;
+                if (typeof data === "string") {
+                    try {
+                        data = JSON.parse(data);
+                    } catch (e) {
+                        return 0;
+                    }
+                }
+
+                let ct = data.chiTiet || data;
+                if (!ct || typeof ct !== "object") return 0;
+
+                const mauKey = Object.keys(ct).find(k => k.trim().toLowerCase() === String(mau).trim().toLowerCase());
+                if (!mauKey || !ct[mauKey]) return 0;
+
+                const loaiObj = ct[mauKey];
+                if (typeof loaiObj !== "object") return 0;
+
+                const loaiKey = Object.keys(loaiObj).find(k => k.trim().toLowerCase() === String(loaiThun).trim().toLowerCase());
+                if (!loaiKey || !loaiObj[loaiKey]) return 0;
+
+                const detail = loaiObj[loaiKey];
+                if (typeof detail === "object" && detail !== null) {
+                    return parseFloat(detail.total || detail.tong || 0) || 0;
+                } else if (typeof detail === "number" || typeof detail === "string") {
+                    return parseFloat(detail) || 0;
+                }
+                return 0;
+            }
+
+            // --- 3.3. HÀM CẬP NHẬT HIỂN THỊ "CHI TIẾT NHẬN THEO MÀU" ---
+            function updateColorDetailView() {
+                const selectedMaHang = itemCodeSelect.value;
+                const selectedLoaiThun = elasticTypeInput.value;
+                const selectedMau = colorSelect.value;
+                const appData = getAppData();
+
+                if (!selectedMaHang || !selectedMau || !appData || !appData.form || !appData.form.listMH) {
+                    receivedQtyEl.innerHTML = `
+                        <div class="stat-container">
+                            <div class="stat-box green-dark">0</div>
+                            <div class="stat-box blue">0</div>
+                        </div>`;
+                    return;
+                }
+
+                const itemData = appData.form.listMH[selectedMaHang] || {};
+                const receivedByDetail = calculateReceivedQuantityByDetail(selectedMaHang, selectedLoaiThun, selectedMau, appData);
+                const targetQty = getTargetQtyFromChiTiet(itemData.chiTietSoLuong, selectedMau, selectedLoaiThun);
+
+                // Nếu đã nhận > tổng đơn thì màu đỏ, ngược lại (nhỏ hơn hoặc bằng) màu xanh lá đậm
+                const colorClass = (receivedByDetail > targetQty) ? "red" : "green-dark";
+
+                receivedQtyEl.innerHTML = `
+                    <div class="stat-container">
+                        <div class="stat-box ${colorClass}">${Number(receivedByDetail).toLocaleString('vi-VN')}</div>
+                        <div class="stat-box blue">${Number(targetQty).toLocaleString('vi-VN')}</div>
+                    </div>`;
             }
 
             // --- 4. HIỂN THỊ DỮ LIỆU LÊN GIAO DIỆN ---
@@ -537,8 +685,16 @@
                 if (!selectedMaHang || !appData || !appData.form || !appData.form.listMH) {
                     elasticTypeInput.value = "";
                     colorSelect.innerHTML = '<option value="">-- Chọn màu --</option>';
-                    totalOrderElasticEl.textContent = "0";
-                    receivedQtyEl.textContent = "0";
+                    totalOrderElasticEl.innerHTML = `
+                        <div class="stat-container">
+                            <div class="stat-box green-dark">0</div>
+                            <div class="stat-box blue">0</div>
+                        </div>`;
+                    receivedQtyEl.innerHTML = `
+                        <div class="stat-container">
+                            <div class="stat-box green-dark">0</div>
+                            <div class="stat-box blue">0</div>
+                        </div>`;
                     return;
                 }
 
@@ -546,8 +702,17 @@
 
                 elasticTypeInput.value = itemData.loaiThun || "";
                 
+                const totalReceived = calculateReceivedQuantity(selectedMaHang, appData);
                 const totalOrder = Number(itemData.tongThunDonHang || 0);
-                totalOrderElasticEl.textContent = totalOrder.toLocaleString('vi-VN');
+
+                // Nếu đã nhận > tổng đơn thì màu đỏ, ngược lại màu xanh lá đậm
+                const mainColorClass = (totalReceived > totalOrder) ? "red" : "green-dark";
+
+                totalOrderElasticEl.innerHTML = `
+                    <div class="stat-container">
+                        <div class="stat-box ${mainColorClass}">${Number(totalReceived).toLocaleString('vi-VN')}</div>
+                        <div class="stat-box blue">${Number(totalOrder).toLocaleString('vi-VN')}</div>
+                    </div>`;
 
                 colorSelect.innerHTML = '<option value="">-- Chọn màu --</option>';
                 const rawColor = itemData.mauThun || "";
@@ -574,8 +739,12 @@
                     }, 350);
                 }
 
-                const totalReceived = calculateReceivedQuantity(selectedMaHang, appData);
-                receivedQtyEl.textContent = Number(totalReceived).toLocaleString('vi-VN');
+                updateColorDetailView();
+            });
+
+            // Lắng nghe sự kiện thay đổi màu
+            colorSelect.addEventListener("change", function() {
+                updateColorDetailView();
             });
 
             unitSelect.addEventListener("change", function () {
@@ -673,7 +842,7 @@
                 });
             }
 
-            // --- 7. HÀM GỬI DỮ LIỆU - KIỂM SOÁT ĐẦU VÀO (CHỈ CHO PHÉP GHI CHÚ ĐỂ TRỐNG) ---
+            // --- 7. HÀM GỬI DỮ LIỆU ---
             function writeData() {
                 const appData = getAppData();
                 const auth = getAuthInfo(appData);
@@ -695,7 +864,6 @@
                 const donViTinh = unitSelect.value;
                 const ghiChu = document.getElementById("note-input").value || "";
 
-                // --- KIỂM SOÁT BẮT BUỘC NHẬP ĐẦY ĐỦ CÁC TRƯỜNG ---
                 if (!ngayNhan) {
                     alert("Vui lòng chọn Ngày nhận!");
                     document.getElementById("date-input").focus();

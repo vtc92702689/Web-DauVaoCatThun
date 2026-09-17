@@ -278,7 +278,7 @@
             color: white;
             border: none;
             padding: 10px 2px;
-            font-size: 14px; /* Bằng chữ Mã tiếp theo */
+            font-size: 14px;
             font-weight: 600;
             cursor: pointer;
             transition: background-color 0.2s, opacity 0.1s;
@@ -341,7 +341,7 @@
         }
 
         .detail-table-title {
-            font-size: 14px; /* Giảm 1 đơn vị (từ 15px -> 14px) */
+            font-size: 14px;
             font-weight: bold;
             color: #007BFF;
             text-align: left;
@@ -365,7 +365,7 @@
             border-right: 1px solid #dee2e6;
             border-bottom: 1px solid #dee2e6;
             padding: 8px 5px;
-            font-size: 14px; /* Giảm 1 đơn vị (từ 15px -> 14px) */
+            font-size: 14px;
             text-align: center;
             word-break: break-word;
         }
@@ -1188,59 +1188,66 @@
                     const listMH = (appData.form && appData.form.listMH) ? appData.form.listMH : {};
                     const pairMap = {};
 
-                    Object.keys(listMH).forEach(mhKey => {
-                        if (getGeneralBaseMaHang(mhKey) === baseCode) {
-                            const itemData = listMH[mhKey] || {};
-                            totalOrderBase += parseFloat(itemData.tongThunDonHang || 0) || 0;
+                    // Kiểm tra xem trong listMH có tồn tại mã trùng khớp chính xác với baseCode (ví dụ A123) hay không
+                    const exactBaseKey = Object.keys(listMH).find(k => k.trim().toUpperCase() === baseCode);
 
-                            let hasDetail = false;
-                            let chiTietData = itemData.chiTietSoLuong;
-                            if (chiTietData) {
-                                if (typeof chiTietData === "string") {
-                                    try { chiTietData = JSON.parse(chiTietData); } catch(e) {}
-                                }
-                                let ct = (chiTietData && typeof chiTietData === "object") ? (chiTietData.chiTiet || chiTietData) : null;
-                                if (ct && typeof ct === "object") {
-                                    Object.keys(ct).forEach(mauKey => {
-                                        const loaiObj = ct[mauKey];
-                                        if (loaiObj && typeof loaiObj === "object") {
-                                            Object.keys(loaiObj).forEach(loaiKey => {
-                                                hasDetail = true;
-                                                const targetVal = getTargetQtyFromChiTiet(itemData.chiTietSoLuong, mauKey, loaiKey);
-                                                const normKey = (loaiKey.trim() + "___" + mauKey.trim()).toLowerCase();
-                                                if (!pairMap[normKey]) {
-                                                    pairMap[normKey] = {
-                                                        loaiMauDisplay: loaiKey.trim() + " - " + mauKey.trim(),
-                                                        received: 0,
-                                                        target: 0
-                                                    };
-                                                }
-                                                pairMap[normKey].target += targetVal;
-                                            });
-                                        }
-                                    });
-                                }
+                    // Nếu có mã gốc (A123): Chỉ lấy từ mã gốc đó (không cộng lặp A123+).
+                    // Nếu không có mã gốc (P222): Mới lấy tất cả các mã con tách (P222-01, P222-02) để cộng dồn.
+                    const mhKeysToProcess = exactBaseKey 
+                        ? [exactBaseKey] 
+                        : Object.keys(listMH).filter(mhKey => getGeneralBaseMaHang(mhKey) === baseCode);
+
+                    mhKeysToProcess.forEach(mhKey => {
+                        const itemData = listMH[mhKey] || {};
+                        totalOrderBase += parseFloat(itemData.tongThunDonHang || 0) || 0;
+
+                        let hasDetail = false;
+                        let chiTietData = itemData.chiTietSoLuong;
+                        if (chiTietData) {
+                            if (typeof chiTietData === "string") {
+                                try { chiTietData = JSON.parse(chiTietData); } catch(e) {}
                             }
-
-                            if (!hasDetail) {
-                                const defaultLoai = (itemData.loaiThun || "").trim();
-                                const rawColors = itemData.mauThun || "";
-                                let colors = String(rawColors).split('|').map(c => c.trim()).filter(Boolean);
-                                if (colors.length === 0) colors = [""];
-
-                                colors.forEach(m => {
-                                    const targetVal = getTargetQtyFromChiTiet(itemData.chiTietSoLuong, m, defaultLoai) || (colors.length === 1 ? parseFloat(itemData.tongThunDonHang || 0) || 0 : 0);
-                                    const normKey = (defaultLoai + "___" + m).toLowerCase();
-                                    if (!pairMap[normKey]) {
-                                        pairMap[normKey] = {
-                                            loaiMauDisplay: (defaultLoai ? defaultLoai + " - " : "") + (m || "---"),
-                                            received: 0,
-                                            target: 0
-                                        };
+                            let ct = (chiTietData && typeof chiTietData === "object") ? (chiTietData.chiTiet || chiTietData) : null;
+                            if (ct && typeof ct === "object") {
+                                Object.keys(ct).forEach(mauKey => {
+                                    const loaiObj = ct[mauKey];
+                                    if (loaiObj && typeof loaiObj === "object") {
+                                        Object.keys(loaiObj).forEach(loaiKey => {
+                                            hasDetail = true;
+                                            const targetVal = getTargetQtyFromChiTiet(itemData.chiTietSoLuong, mauKey, loaiKey);
+                                            const normKey = (loaiKey.trim() + "___" + mauKey.trim()).toLowerCase();
+                                            if (!pairMap[normKey]) {
+                                                pairMap[normKey] = {
+                                                    loaiMauDisplay: loaiKey.trim() + " - " + mauKey.trim(),
+                                                    received: 0,
+                                                    target: 0
+                                                };
+                                            }
+                                            pairMap[normKey].target += targetVal;
+                                        });
                                     }
-                                    pairMap[normKey].target += targetVal;
                                 });
                             }
+                        }
+
+                        if (!hasDetail) {
+                            const defaultLoai = (itemData.loaiThun || "").trim();
+                            const rawColors = itemData.mauThun || "";
+                            let colors = String(rawColors).split('|').map(c => c.trim()).filter(Boolean);
+                            if (colors.length === 0) colors = [""];
+
+                            colors.forEach(m => {
+                                const targetVal = getTargetQtyFromChiTiet(itemData.chiTietSoLuong, m, defaultLoai) || (colors.length === 1 ? parseFloat(itemData.tongThunDonHang || 0) || 0 : 0);
+                                const normKey = (defaultLoai + "___" + m).toLowerCase();
+                                if (!pairMap[normKey]) {
+                                    pairMap[normKey] = {
+                                        loaiMauDisplay: (defaultLoai ? defaultLoai + " - " : "") + (m || "---"),
+                                        received: 0,
+                                        target: 0
+                                    };
+                                }
+                                pairMap[normKey].target += targetVal;
+                            });
                         }
                     });
 

@@ -125,15 +125,15 @@
         }
 
         .stat-box.green-dark {
-            color: #00b88a; /* Xanh lá đậm pha đen dễ nhìn */
+            color: #00b88a;
         }
 
         .stat-box.red {
-            color: #dc3545; /* Đỏ khi vượt tổng đơn */
+            color: #dc3545;
         }
 
         .stat-box.blue {
-            color: #007BFF; /* Xanh dương cho Tổng đơn */
+            color: #007BFF;
         }
 
         input[type="text"],
@@ -242,7 +242,6 @@
             100% { transform: rotate(360deg); }
         }
 
-        /* --- BIỂU TƯỢNG V XANH LÁ ANIMATION --- */
         .checkmark-svg {
             width: 42px;
             height: 42px;
@@ -272,6 +271,118 @@
             font-weight: 600;
             color: #333;
         }
+
+        /* --- NÚT CHI TIẾT TRÊN NỀN Ô XANH LÁ LIỀN MẠCH --- */
+        .detail-btn {
+            background-color: transparent;
+            color: white;
+            border: none;
+            padding: 10px 2px;
+            font-size: 14px; /* Bằng chữ Mã tiếp theo */
+            font-weight: 600;
+            cursor: pointer;
+            transition: background-color 0.2s, opacity 0.1s;
+            white-space: nowrap;
+            display: block;
+            width: 100%;
+            height: 100%;
+        }
+
+        .detail-btn:active {
+            background-color: rgba(0, 0, 0, 0.12);
+        }
+
+        .detail-modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            background-color: rgba(0, 0, 0, 0.5);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 10000;
+            backdrop-filter: blur(2px);
+        }
+
+        .detail-modal-box {
+            background-color: #ffffff;
+            width: calc(100% - 32px);
+            max-width: 480px;
+            max-height: 85vh;
+            border-radius: 12px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.3);
+            padding: 16px;
+            position: relative;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            overflow-y: auto;
+            margin: 0 16px;
+        }
+
+        .detail-modal-close {
+            position: absolute;
+            top: 6px;
+            right: 10px;
+            font-size: 24px;
+            font-weight: bold;
+            color: #888;
+            cursor: pointer;
+            line-height: 1;
+            border: none;
+            background: transparent;
+            padding: 4px 8px;
+        }
+
+        .detail-modal-close:hover {
+            color: #000;
+        }
+
+        .detail-table-title {
+            font-size: 14px; /* Giảm 1 đơn vị (từ 15px -> 14px) */
+            font-weight: bold;
+            color: #007BFF;
+            text-align: left;
+            margin-top: 6px;
+            letter-spacing: 0.3px;
+        }
+
+        /* KHUNG BẢNG MODAL BO GÓC TRỌN VẸN 4 CẠNH */
+        .detail-table {
+            width: 100%;
+            border-collapse: separate;
+            border-spacing: 0;
+            margin-top: 4px;
+            table-layout: fixed;
+            border: 1px solid #dee2e6;
+            border-radius: 8px;
+            overflow: hidden;
+        }
+
+        .detail-table th, .detail-table td {
+            border-right: 1px solid #dee2e6;
+            border-bottom: 1px solid #dee2e6;
+            padding: 8px 5px;
+            font-size: 14px; /* Giảm 1 đơn vị (từ 15px -> 14px) */
+            text-align: center;
+            word-break: break-word;
+        }
+
+        .detail-table th:last-child, .detail-table td:last-child {
+            border-right: none;
+        }
+
+        .detail-table tr:last-child td {
+            border-bottom: none;
+        }
+
+        .detail-table th {
+            background-color: #f1f3f5;
+            color: #333;
+            font-weight: 600;
+        }
     </style>
 </head>
 <body>
@@ -285,6 +396,14 @@
                 <path class="checkmark-check" fill="none" stroke="#28a745" stroke-width="4" stroke-linecap="round" stroke-linejoin="round" d="M14 27 l7 7 l16 -16"/>
             </svg>
             <div id="loading-text" class="loading-text">Đang xử lý...</div>
+        </div>
+    </div>
+
+    <!-- OVERLAY MODAL BẢNG CHI TIẾT MÃ HÀNG TỔNG -->
+    <div id="detail-modal-overlay" class="detail-modal-overlay">
+        <div class="detail-modal-box">
+            <button id="detail-modal-close" class="detail-modal-close">&times;</button>
+            <div id="detail-modal-body"></div>
         </div>
     </div>
 
@@ -318,12 +437,15 @@
     <div class="card-container">
         <table>
             <tr>
-                <th>Mã tiếp theo</th>
-                <td id="next-code" class="highlight-value">---</td>
+                <th style="width: 38%;">Mã tiếp theo</th>
+                <td id="next-code" class="highlight-value" style="width: 37%; text-align: center; border-right: 1px solid #f0f0f0;">---</td>
+                <td style="width: 25%; text-align: center; padding: 0; background-color: #28a745; vertical-align: middle;">
+                    <button id="detail-button" class="detail-btn" type="button">Chi Tiết</button>
+                </td>
             </tr>
             <tr>
                 <th> Đã Nhận /Tổng Đơn (M)</th>
-                <td id="total-order-elastic">
+                <td id="total-order-elastic" colspan="2">
                     <div class="stat-container">
                         <div class="stat-box green-dark">0</div>
                         <div class="stat-box blue">0</div>
@@ -331,8 +453,8 @@
                 </td>
             </tr>
             <tr>
-                <th>Chi tiết nhận theo màu</th>
-                <td id="received-qty">
+                <th>Số lượng nhận theo màu thun</th>
+                <td id="received-qty" colspan="2">
                     <div class="stat-container">
                         <div class="stat-box green-dark">0</div>
                         <div class="stat-box blue">0</div>
@@ -434,6 +556,12 @@
             const loadingSpinner = document.getElementById("loading-spinner");
             const loadingText = document.getElementById("loading-text");
 
+            // Element Popup Modal Chi Tiết
+            const detailButton = document.getElementById("detail-button");
+            const detailModalOverlay = document.getElementById("detail-modal-overlay");
+            const detailModalClose = document.getElementById("detail-modal-close");
+            const detailModalBody = document.getElementById("detail-modal-body");
+
             function showLoading(msg = "Đang xử lý...") {
                 loadingSpinner.style.display = "block";
                 
@@ -496,10 +624,20 @@
                 return { userId, token };
             }
 
-            // HÀM HỖ TRỢ: CẮT BỎ CÁC KÝ TỰ + HOẶC - Ở CỦỐI MÃ HÀNG
+            // HÀM HỖ TRỢ: CẮT BỎ CÁC KÝ TỰ + HOẶC - Ở CUỐI MÃ HÀNG
             function getBaseMaHang(code) {
                 if (!code) return "";
                 return String(code).trim().replace(/[+\-]+$/, '').toLowerCase();
+            }
+
+            // HÀM TÍNH MÃ HÀNG TỔNG (VD: P222-01, P222-02 -> P222 | A123, A123+ -> A123)
+            function getGeneralBaseMaHang(code) {
+                if (!code) return "";
+                let s = String(code).trim().replace(/[+\-]+$/, '');
+                if (s.includes('-')) {
+                    s = s.split('-')[0].trim();
+                }
+                return s.toUpperCase();
             }
 
             // --- 3. TÍNH TỔNG SỐ LƯỢNG ĐÃ NHẬN THEO MÃ HÀNG (GOM TẤT CẢ BIẾN THỂ +, - HOẶC KHÔNG DẤU) ---
@@ -580,7 +718,7 @@
                 if (typeof loaiObj !== "object") return 0;
 
                 const loaiKey = Object.keys(loaiObj).find(k => k.trim().toLowerCase() === String(loaiThun).trim().toLowerCase());
-                if (!loaiKey || !loaiObj[loaiKey]) return 0;
+                if (!loaiKey || !ct[mauKey][loaiKey]) return 0;
 
                 const detail = loaiObj[loaiKey];
                 if (typeof detail === "object" && detail !== null) {
@@ -611,7 +749,6 @@
                 const receivedByDetail = calculateReceivedQuantityByDetail(selectedMaHang, selectedLoaiThun, selectedMau, appData);
                 const targetQty = getTargetQtyFromChiTiet(itemData.chiTietSoLuong, selectedMau, selectedLoaiThun);
 
-                // Nếu đã nhận > tổng đơn thì màu đỏ, ngược lại (nhỏ hơn hoặc bằng) màu xanh lá đậm
                 const colorClass = (receivedByDetail > targetQty) ? "red" : "green-dark";
 
                 receivedQtyEl.innerHTML = `
@@ -705,7 +842,6 @@
                 const totalReceived = calculateReceivedQuantity(selectedMaHang, appData);
                 const totalOrder = Number(itemData.tongThunDonHang || 0);
 
-                // Nếu đã nhận > tổng đơn thì màu đỏ, ngược lại màu xanh lá đậm
                 const mainColorClass = (totalReceived > totalOrder) ? "red" : "green-dark";
 
                 totalOrderElasticEl.innerHTML = `
@@ -998,7 +1134,203 @@
                 localStorage.setItem(LAST_ACCESS_KEY, now.toString());
             }
 
-            // --- 9. GẮN SỰ KIỆN NÚT BẤM ---
+            // --- 9. XỬ LÝ SỰ KIỆN NÚT CHI TIẾT VÀ MODAL TỔNG HỢP ---
+            if (detailModalClose) {
+                detailModalClose.addEventListener("click", function() {
+                    detailModalOverlay.style.display = "none";
+                });
+            }
+
+            if (detailModalOverlay) {
+                detailModalOverlay.addEventListener("click", function(e) {
+                    if (e.target === detailModalOverlay) {
+                        detailModalOverlay.style.display = "none";
+                    }
+                });
+            }
+
+            if (detailButton) {
+                detailButton.addEventListener("click", function() {
+                    const selectedMaHang = itemCodeSelect.value;
+                    if (!selectedMaHang) {
+                        alert("Vui lòng chọn Mã hàng trước khi xem chi tiết!");
+                        return;
+                    }
+
+                    const appData = getAppData();
+                    if (!appData) {
+                        alert("Không tìm thấy dữ liệu ứng dụng!");
+                        return;
+                    }
+
+                    const baseCode = getGeneralBaseMaHang(selectedMaHang);
+                    if (!baseCode) {
+                        alert("Mã hàng không hợp lệ!");
+                        return;
+                    }
+
+                    let totalReceivedBase = 0;
+                    let totalOrderBase = 0;
+
+                    const rows = (appData.data && Array.isArray(appData.data))
+                        ? appData.data
+                        : (appData.data ? Object.values(appData.data) : []);
+
+                    rows.forEach(item => {
+                        if (!item) return;
+                        if (getGeneralBaseMaHang(item.maHang) === baseCode) {
+                            const st = parseFloat(item.soThung || 0) || 0;
+                            const slt = parseFloat(item.soLuongThung || 0) || 0;
+                            totalReceivedBase += (st * slt);
+                        }
+                    });
+
+                    const listMH = (appData.form && appData.form.listMH) ? appData.form.listMH : {};
+                    const pairMap = {};
+
+                    Object.keys(listMH).forEach(mhKey => {
+                        if (getGeneralBaseMaHang(mhKey) === baseCode) {
+                            const itemData = listMH[mhKey] || {};
+                            totalOrderBase += parseFloat(itemData.tongThunDonHang || 0) || 0;
+
+                            let hasDetail = false;
+                            let chiTietData = itemData.chiTietSoLuong;
+                            if (chiTietData) {
+                                if (typeof chiTietData === "string") {
+                                    try { chiTietData = JSON.parse(chiTietData); } catch(e) {}
+                                }
+                                let ct = (chiTietData && typeof chiTietData === "object") ? (chiTietData.chiTiet || chiTietData) : null;
+                                if (ct && typeof ct === "object") {
+                                    Object.keys(ct).forEach(mauKey => {
+                                        const loaiObj = ct[mauKey];
+                                        if (loaiObj && typeof loaiObj === "object") {
+                                            Object.keys(loaiObj).forEach(loaiKey => {
+                                                hasDetail = true;
+                                                const targetVal = getTargetQtyFromChiTiet(itemData.chiTietSoLuong, mauKey, loaiKey);
+                                                const normKey = (loaiKey.trim() + "___" + mauKey.trim()).toLowerCase();
+                                                if (!pairMap[normKey]) {
+                                                    pairMap[normKey] = {
+                                                        loaiMauDisplay: loaiKey.trim() + " - " + mauKey.trim(),
+                                                        received: 0,
+                                                        target: 0
+                                                    };
+                                                }
+                                                pairMap[normKey].target += targetVal;
+                                            });
+                                        }
+                                    });
+                                }
+                            }
+
+                            if (!hasDetail) {
+                                const defaultLoai = (itemData.loaiThun || "").trim();
+                                const rawColors = itemData.mauThun || "";
+                                let colors = String(rawColors).split('|').map(c => c.trim()).filter(Boolean);
+                                if (colors.length === 0) colors = [""];
+
+                                colors.forEach(m => {
+                                    const targetVal = getTargetQtyFromChiTiet(itemData.chiTietSoLuong, m, defaultLoai) || (colors.length === 1 ? parseFloat(itemData.tongThunDonHang || 0) || 0 : 0);
+                                    const normKey = (defaultLoai + "___" + m).toLowerCase();
+                                    if (!pairMap[normKey]) {
+                                        pairMap[normKey] = {
+                                            loaiMauDisplay: (defaultLoai ? defaultLoai + " - " : "") + (m || "---"),
+                                            received: 0,
+                                            target: 0
+                                        };
+                                    }
+                                    pairMap[normKey].target += targetVal;
+                                });
+                            }
+                        }
+                    });
+
+                    rows.forEach(item => {
+                        if (!item) return;
+                        if (getGeneralBaseMaHang(item.maHang) === baseCode) {
+                            const loai = (item.loaiThun || "").trim();
+                            const mau = (item.mau || "").trim();
+                            const st = parseFloat(item.soThung || 0) || 0;
+                            const slt = parseFloat(item.soLuongThung || 0) || 0;
+                            const qty = st * slt;
+
+                            const normKey = (loai + "___" + mau).toLowerCase();
+                            if (!pairMap[normKey]) {
+                                pairMap[normKey] = {
+                                    loaiMauDisplay: (loai ? loai + " - " : "") + (mau || "---"),
+                                    received: 0,
+                                    target: 0
+                                };
+                            }
+                            pairMap[normKey].received += qty;
+                        }
+                    });
+
+                    let html = `
+                        <div class="detail-table-title">TỔNG SỐ LƯỢNG</div>
+                        <table class="detail-table">
+                            <thead>
+                                <tr>
+                                    <th style="width: 40%;">Mã hàng tổng</th>
+                                    <th style="width: 30%;">Tổng đã nhận (M)</th>
+                                    <th style="width: 30%;">Tổng đơn hàng (M)</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td style="font-weight: bold; color: #007BFF;">${baseCode}</td>
+                                    <td style="font-weight: bold; color: ${totalReceivedBase > totalOrderBase ? '#dc3545' : '#00b88a'};">
+                                        ${Number(totalReceivedBase).toLocaleString('vi-VN')}
+                                    </td>
+                                    <td style="font-weight: bold; color: #007BFF;">
+                                        ${Number(totalOrderBase).toLocaleString('vi-VN')}
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+
+                        <div class="detail-table-title" style="margin-top: 10px;">CHI TIẾT</div>
+                        <table class="detail-table">
+                            <thead>
+                                <tr>
+                                    <th style="width: 40%;">Bản thun - Màu thun</th>
+                                    <th style="width: 30%;">Số lượng đã nhận (M)</th>
+                                    <th style="width: 30%;">Tổng đơn hàng (M)</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                    `;
+
+                    const pairKeys = Object.keys(pairMap);
+                    if (pairKeys.length === 0) {
+                        html += `<tr><td colspan="3" style="color: #888;">Không có dữ liệu chi tiết</td></tr>`;
+                    } else {
+                        pairKeys.forEach(k => {
+                            const rowData = pairMap[k];
+                            const rec = rowData.received;
+                            const tar = rowData.target;
+                            const colorClass = (rec > tar) ? '#dc3545' : '#00b88a';
+
+                            html += `
+                                <tr>
+                                    <td style="text-align: left; font-weight: 500;">${rowData.loaiMauDisplay}</td>
+                                    <td style="font-weight: bold; color: ${colorClass};">${Number(rec).toLocaleString('vi-VN')}</td>
+                                    <td style="font-weight: bold; color: #007BFF;">${Number(tar).toLocaleString('vi-VN')}</td>
+                                </tr>
+                            `;
+                        });
+                    }
+
+                    html += `
+                            </tbody>
+                        </table>
+                    `;
+
+                    detailModalBody.innerHTML = html;
+                    detailModalOverlay.style.display = "flex";
+                });
+            }
+
+            // --- 10. GẮN SỰ KIỆN NÚT BẤM ---
             document.getElementById("refresh-button").addEventListener("click", updateData);
             document.getElementById("submit-button").addEventListener("click", writeData);
 

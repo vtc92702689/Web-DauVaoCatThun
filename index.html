@@ -524,7 +524,7 @@
     <script>
         document.addEventListener("DOMContentLoaded", function () {
             const APP_STORAGE_KEY = "appData_QuanLyNhapThun_DKien";
-            const BASE_API_URL = "https://script.google.com/macros/s/AKfycbwO5_N0zFOjC4R_Mm_p7erdETZSFCpgHJeyKXOE13_mOKZpqaSmCy6g8d1Ucl2qiBo/exec";
+            const BASE_API_URL = "https://script.google.com/macros/s/AKfycbwcK-69aOLR5MAFOwuXJiDXMMua-wl2PCV00k_0tzrNfmSXJ1h-_EmJ1zCSmkpPOH8/exec";
 
             const AUTO_REFRESH_MINUTES = 30;
             const LAST_ACCESS_KEY = "lastAccessTime_QuanLyNhapThun_DKien";
@@ -779,7 +779,16 @@
 
                 nextCodeEl.textContent = form.maTiepTheo || "---";
 
-                if (form.listMH) {
+                // ĐÃ CẬP NHẬT: Ưu tiên lấy danh sách Mã hàng từ mảng `listMHDangHoatDong`
+                if (Array.isArray(form.listMHDangHoatDong)) {
+                    itemCodeSelect.innerHTML = '<option value="">-- Chọn mã hàng --</option>';
+                    form.listMHDangHoatDong.forEach(item => {
+                        const option = document.createElement("option");
+                        option.value = item;
+                        option.textContent = item;
+                        itemCodeSelect.appendChild(option);
+                    });
+                } else if (form.listMH) {
                     itemCodeSelect.innerHTML = '<option value="">-- Chọn mã hàng --</option>';
                     Object.keys(form.listMH).forEach(key => {
                         const option = document.createElement("option");
